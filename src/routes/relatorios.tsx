@@ -24,6 +24,7 @@ import {
 import { formatDate, formatMonthKey, formatMoney, formatPercent, MONTH_NAMES, monthKey } from "@/lib/format";
 import { EmptyState, Money, PageHeader, SectionCard, TableSkeleton } from "@/components/finance/ui-bits";
 import { PessoaBadge } from "@/components/finance/badges";
+import { RelatorioCategorias } from "@/components/finance/relatorio-categorias";
 
 export const Route = createFileRoute("/relatorios")({
   head: () => ({
@@ -100,6 +101,7 @@ function Relatorios() {
         <TabsList className="bg-transparent p-0 gap-2">
           {([
             ["mensal", "Mensal"],
+            ["categorias", "Categorias"],
             ["servicos", "Serviços"],
             ["clientes", "Clientes"],
             ["contas", "Contas"],
