@@ -232,6 +232,7 @@ export function TransacaoDrawer({
         conta_destino_id: form.tipo === "Transferência" ? Number(form.conta_destino_id) : null,
         pessoa_id: form.tipo === "Transferência" || !form.pessoa_id ? null : Number(form.pessoa_id),
         vencimento: form.vencimento,
+        conciliada: form.conciliada,
       };
 
       await writeRow("transacoes", transacao && !isDuplicate ? "update" : "insert", payload, transacao?.id);
