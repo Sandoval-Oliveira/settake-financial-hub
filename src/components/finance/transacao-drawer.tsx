@@ -116,7 +116,7 @@ export function TransacaoDrawer({
   onOpenChange: (open: boolean) => void;
   transacao: Transacao | null;
   mode?: "edit" | "duplicate";
-  lockedTipo?: TipoTransacao;
+  lockedTipo?: TipoTransacao | undefined;
 }) {
   const [form, setForm] = useState<FormState>(emptyForm);
   const [pending, setPending] = useState<{ grupo: string; item: string } | null>(null);
