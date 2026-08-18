@@ -1,6 +1,15 @@
-import { useState, type ReactNode } from "react";
+import { useEffect, useState, type ReactNode } from "react";
 import { Link, useRouterState } from "@tanstack/react-router";
-import { BarChart3, CalendarDays, LayoutDashboard, Menu, Users, Wallet } from "lucide-react";
+import {
+  BarChart3,
+  CalendarDays,
+  ChevronLeft,
+  ChevronRight,
+  LayoutDashboard,
+  Menu,
+  Users,
+  Wallet,
+} from "lucide-react";
 import { cn } from "@/lib/utils";
 
 const NAV = [
@@ -26,7 +35,7 @@ function NavList({ collapsed, onNavigate }: { collapsed: boolean; onNavigate?: (
             className={cn(
               "flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors",
               active
-                ? "bg-primary text-primary-foreground"
+                ? "bg-brand-gradient text-primary-foreground"
                 : "text-muted-foreground hover:bg-sidebar-accent hover:text-foreground",
               collapsed && "justify-center px-2",
             )}
@@ -43,7 +52,7 @@ function NavList({ collapsed, onNavigate }: { collapsed: boolean; onNavigate?: (
 function Logo({ collapsed }: { collapsed: boolean }) {
   return (
     <div className={cn("flex items-center gap-3 border-b border-sidebar-border px-4 py-4", collapsed && "justify-center px-2")}>
-      <div className="flex size-9 shrink-0 items-center justify-center rounded-lg bg-gradient-to-br from-[#6C63FF] to-[#A78BFA] text-sm font-bold text-primary-foreground">
+      <div className="flex size-9 shrink-0 items-center justify-center rounded-lg bg-brand-gradient text-sm font-bold text-primary-foreground">
         SF
       </div>
       {!collapsed && (
@@ -58,22 +67,44 @@ function Logo({ collapsed }: { collapsed: boolean }) {
 
 export function AppShell({ children }: { children: ReactNode }) {
   const [mobileOpen, setMobileOpen] = useState(false);
+  const [collapsed, setCollapsed] = useState(false);
+
+  useEffect(() => {
+    const saved = localStorage.getItem("settake:sidebar-collapsed");
+    if (saved === "1") setCollapsed(true);
+  }, []);
+
+  function toggle() {
+    setCollapsed((v) => {
+      localStorage.setItem("settake:sidebar-collapsed", v ? "0" : "1");
+      return !v;
+    });
+  }
 
   return (
     <div className="min-h-screen bg-background">
       {/* Desktop / tablet sidebar */}
-      <aside className="fixed inset-y-0 left-0 z-30 hidden w-[72px] flex-col border-r border-sidebar-border bg-sidebar md:flex xl:w-60">
-        <div className="xl:hidden">
-          <Logo collapsed />
-          <NavList collapsed />
-        </div>
-        <div className="hidden xl:flex xl:h-full xl:flex-col">
-          <Logo collapsed={false} />
-          <NavList collapsed={false} />
+      <aside
+        className={cn(
+          "fixed inset-y-0 left-0 z-30 hidden flex-col border-r border-sidebar-border bg-sidebar transition-[width] duration-300 ease-in-out md:flex",
+          collapsed ? "w-16" : "w-60",
+        )}
+      >
+        <Logo collapsed={collapsed} />
+        <NavList collapsed={collapsed} />
+        {!collapsed && (
           <div className="border-t border-sidebar-border px-4 py-3">
             <p className="text-xs text-muted-foreground">SetTake Finance</p>
           </div>
-        </div>
+        )}
+        <button
+          type="button"
+          onClick={toggle}
+          aria-label={collapsed ? "Expandir menu" : "Recolher menu"}
+          className="absolute top-1/2 -right-3 flex size-6 -translate-y-1/2 items-center justify-center rounded-full border border-sidebar-border bg-[#2A2D3E] text-muted-foreground hover:text-primary"
+        >
+          {collapsed ? <ChevronRight className="size-4" /> : <ChevronLeft className="size-4" />}
+        </button>
       </aside>
 
       {/* Mobile header */}
@@ -94,7 +125,14 @@ export function AppShell({ children }: { children: ReactNode }) {
         </div>
       )}
 
-      <main className="px-4 py-6 md:pl-[88px] md:pr-6 xl:pl-[264px]">{children}</main>
+      <main
+        className={cn(
+          "px-4 py-6 transition-[padding] duration-300 ease-in-out md:pr-6",
+          collapsed ? "md:pl-20" : "md:pl-64",
+        )}
+      >
+        {children}
+      </main>
     </div>
   );
 }

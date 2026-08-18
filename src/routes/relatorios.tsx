@@ -97,11 +97,21 @@ function Relatorios() {
       <PageHeader title="Relatórios" subtitle="Análise financeira" />
 
       <Tabs defaultValue="mensal">
-        <TabsList>
-          <TabsTrigger value="mensal">Mensal</TabsTrigger>
-          <TabsTrigger value="servicos">Serviços</TabsTrigger>
-          <TabsTrigger value="clientes">Clientes</TabsTrigger>
-          <TabsTrigger value="contas">Contas</TabsTrigger>
+        <TabsList className="bg-transparent p-0 gap-2">
+          {([
+            ["mensal", "Mensal"],
+            ["servicos", "Serviços"],
+            ["clientes", "Clientes"],
+            ["contas", "Contas"],
+          ] as const).map(([v, label]) => (
+            <TabsTrigger
+              key={v}
+              value={v}
+              className="rounded-none border-b-2 border-transparent bg-transparent px-3 pb-2 shadow-none data-[state=active]:border-primary data-[state=active]:bg-transparent data-[state=active]:text-primary data-[state=active]:shadow-none"
+            >
+              {label}
+            </TabsTrigger>
+          ))}
         </TabsList>
 
         <TabsContent value="mensal" className="mt-4 space-y-4">
@@ -179,7 +189,7 @@ function Relatorios() {
                     <Legend wrapperStyle={{ fontSize: 12 }} />
                     <Area dataKey="Receita" stroke="#22C55E" fill="#22C55E" fillOpacity={0.15} />
                     <Area dataKey="Despesa" stroke="#EF4444" fill="#EF4444" fillOpacity={0.15} />
-                    <Area dataKey="Resultado" stroke="#6C63FF" fill="#6C63FF" fillOpacity={0.2} />
+                    <Area dataKey="Resultado" stroke="#E8B800" fill="#E8B800" fillOpacity={0.2} />
                   </AreaChart>
                 </ResponsiveContainer>
               ) : (
@@ -212,7 +222,7 @@ function Relatorios() {
                     <XAxis type="number" stroke="#8B8FA8" fontSize={11} tickLine={false} axisLine={false} />
                     <YAxis type="category" dataKey="servico" stroke="#8B8FA8" fontSize={11} width={140} tickLine={false} axisLine={false} />
                     <Tooltip {...tooltipProps} />
-                    <Bar dataKey="receita" name="Receita" fill="#6C63FF" radius={[0, 6, 6, 0]} />
+                    <Bar dataKey="receita" name="Receita" fill="#E8B800" radius={[0, 6, 6, 0]} />
                   </BarChart>
                 </ResponsiveContainer>
               ) : (
@@ -326,7 +336,7 @@ function Relatorios() {
                       ]}>
                         <XAxis dataKey="nome" stroke="#8B8FA8" fontSize={11} tickLine={false} axisLine={false} />
                         <Tooltip {...tooltipProps} />
-                        <Bar dataKey="valor" radius={[6, 6, 0, 0]} fill="#6C63FF" />
+                        <Bar dataKey="valor" radius={[6, 6, 0, 0]} fill="#E8B800" />
                       </BarChart>
                     </ResponsiveContainer>
                   </div>

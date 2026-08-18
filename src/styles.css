@@ -81,8 +81,9 @@
   --card-foreground: #f0f2f8;
   --popover: #1a1d27;
   --popover-foreground: #f0f2f8;
-  --primary: #6c63ff;
-  --primary-foreground: #ffffff;
+  --primary: #e8b800;
+  --primary-foreground: #0f1117;
+  --brand-gradient: linear-gradient(135deg, #e8b800 0%, #f5820a 100%);
   --secondary: #232735;
   --secondary-foreground: #f0f2f8;
   --muted: #232735;
@@ -100,20 +101,20 @@
   --surface-hover: #1e2130;
   --border: #2a2d3e;
   --input: #2a2d3e;
-  --ring: #6c63ff;
-  --chart-1: #6c63ff;
+  --ring: #e8b800;
+  --chart-1: #e8b800;
   --chart-2: #22c55e;
   --chart-3: #ef4444;
   --chart-4: #f59e0b;
   --chart-5: #3b82f6;
   --sidebar: #14161f;
   --sidebar-foreground: #f0f2f8;
-  --sidebar-primary: #6c63ff;
-  --sidebar-primary-foreground: #ffffff;
+  --sidebar-primary: #e8b800;
+  --sidebar-primary-foreground: #0f1117;
   --sidebar-accent: #1e2130;
   --sidebar-accent-foreground: #f0f2f8;
   --sidebar-border: #2a2d3e;
-  --sidebar-ring: #6c63ff;
+  --sidebar-ring: #e8b800;
 }
 
 @layer base {
@@ -132,6 +133,26 @@
   .tabular {
     font-variant-numeric: tabular-nums;
   }
+
+  * {
+    scrollbar-color: rgb(232 184 0 / 0.4) transparent;
+  }
+
+  ::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+  }
+  ::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  ::-webkit-scrollbar-thumb {
+    background-color: rgb(232 184 0 / 0.4);
+    border-radius: 999px;
+  }
+}
+
+@utility bg-brand-gradient {
+  background-image: var(--brand-gradient);
 }
 
 @keyframes pulse-alert {

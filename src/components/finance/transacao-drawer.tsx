@@ -28,6 +28,33 @@ import {
   type Transacao,
 } from "@/lib/finance";
 import { isoDate } from "@/lib/format";
+import { cn } from "@/lib/utils";
+
+interface Template {
+  label: string;
+  nome: string;
+  natureza_id: number;
+  grupo: string;
+  item: string;
+  status: StatusTransacao;
+  temperatura: string;
+}
+
+const TEMPLATES_DESPESA: Template[] = [
+  { label: "Aluguel", nome: "Aluguel", natureza_id: 3, grupo: "Espaço Físico", item: "Aluguel", status: "A Pagar", temperatura: "Quente" },
+  { label: "Internet", nome: "Ampernet", natureza_id: 3, grupo: "Espaço Físico", item: "Internet", status: "A Pagar", temperatura: "Quente" },
+  { label: "Energia", nome: "Energia Elétrica", natureza_id: 3, grupo: "Espaço Físico", item: "Energia", status: "A Pagar", temperatura: "Quente" },
+  { label: "Condomínio", nome: "Condomínio", natureza_id: 3, grupo: "Espaço Físico", item: "Condomínio", status: "A Pagar", temperatura: "Quente" },
+  { label: "Transporte", nome: "Transporte", natureza_id: 4, grupo: "Mobilidade", item: "Transporte", status: "A Pagar", temperatura: "Quente" },
+  { label: "DAS", nome: "Impostos — DAS", natureza_id: 4, grupo: "Fiscal", item: "Impostos — DAS", status: "A Pagar", temperatura: "Quente" },
+  { label: "Taxa Pix", nome: "Taxa de Recebimento", natureza_id: 4, grupo: "Fiscal", item: "Taxa de Recebimento", status: "Concluído", temperatura: "Quente" },
+];
+
+const TEMPLATES_RECEITA: Template[] = [
+  { label: "Plano Full", nome: "Plano Full", natureza_id: 1, grupo: "Recorrência", item: "Plano Full", status: "A Receber", temperatura: "Frio" },
+  { label: "Plano Pocket", nome: "Plano Pocket", natureza_id: 1, grupo: "Recorrência", item: "Plano Pocket", status: "A Receber", temperatura: "Frio" },
+  { label: "Diária", nome: "Diária de Captação", natureza_id: 1, grupo: "Projeto", item: "Diária de Captação", status: "A Receber", temperatura: "Quente" },
+];
 
 interface FormState {
   nome: string;
@@ -82,17 +109,51 @@ export function TransacaoDrawer({
   open,
   onOpenChange,
   transacao,
+  mode = "edit",
+  lockedTipo,
 }: {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   transacao: Transacao | null;
+  mode?: "edit" | "duplicate";
+  lockedTipo?: TipoTransacao | undefined;
 }) {
   const [form, setForm] = useState<FormState>(emptyForm);
+  const [pending, setPending] = useState<{ grupo: string; item: string } | null>(null);
+  const [activeTemplate, setActiveTemplate] = useState<string | null>(null);
   const queryClient = useQueryClient();
+  const isDuplicate = mode === "duplicate";
 
   useEffect(() => {
-    if (open) setForm(transacao ? fromTransacao(transacao) : emptyForm());
-  }, [open, transacao]);
+    if (!open) return;
+    setPending(null);
+    setActiveTemplate(null);
+    if (transacao) {
+      const base = fromTransacao(transacao);
+      if (isDuplicate) {
+        setForm({
+          ...base,
+          nome: "",
+          vencimento: "",
+          status:
+            base.tipo === "Receita" ? "A Pagar" : base.tipo === "Despesa" ? "A Receber" : base.status,
+        });
+      } else {
+        setForm(base);
+      }
+    } else {
+      const empty = emptyForm();
+      setForm(
+        lockedTipo
+          ? {
+              ...empty,
+              tipo: lockedTipo,
+              status: lockedTipo === "Receita" ? "A Receber" : lockedTipo === "Despesa" ? "A Pagar" : empty.status,
+            }
+          : empty,
+      );
+    }
+  }, [open, transacao, isDuplicate, lockedTipo]);
 
   const contas = useQuery(contasQuery);
   const pessoas = useQuery(pessoasQuery);
@@ -101,6 +162,43 @@ export function TransacaoDrawer({
   const itens = useQuery(itensQuery(form.grupo_id ? Number(form.grupo_id) : null));
 
   const set = (patch: Partial<FormState>) => setForm((f) => ({ ...f, ...patch }));
+
+  useEffect(() => {
+    if (!pending) return;
+    if (!form.grupo_id) {
+      const g = (grupos.data ?? []).find((x) => x.nome === pending.grupo);
+      if (g) setForm((f) => ({ ...f, grupo_id: String(g.id), item_id: "" }));
+      return;
+    }
+    const it = (itens.data ?? []).find((x) => x.nome === pending.item);
+    if (it) {
+      setForm((f) => ({ ...f, item_id: String(it.id) }));
+      setPending(null);
+    }
+  }, [pending, grupos.data, itens.data, form.grupo_id]);
+
+  function applyTemplate(t: Template) {
+    setActiveTemplate(t.label);
+    setForm((f) => ({
+      ...f,
+      nome: t.nome,
+      status: t.status,
+      temperatura: t.temperatura,
+      natureza_id: String(t.natureza_id),
+      grupo_id: "",
+      item_id: "",
+    }));
+    setPending({ grupo: t.grupo, item: t.item });
+  }
+
+  const templates =
+    isDuplicate || transacao
+      ? []
+      : form.tipo === "Despesa"
+        ? TEMPLATES_DESPESA
+        : form.tipo === "Receita"
+          ? TEMPLATES_RECEITA
+          : [];
 
   const mutation = useMutation({
     mutationFn: async () => {
@@ -132,10 +230,16 @@ export function TransacaoDrawer({
         vencimento: form.vencimento,
       };
 
-      await writeRow("transacoes", transacao ? "update" : "insert", payload, transacao?.id);
+      await writeRow("transacoes", transacao && !isDuplicate ? "update" : "insert", payload, transacao?.id);
     },
     onSuccess: () => {
-      toast.success(transacao ? "Lançamento atualizado." : "Lançamento criado.");
+      toast.success(
+        isDuplicate
+          ? "Lançamento duplicado com sucesso!"
+          : transacao
+            ? "Lançamento atualizado."
+            : "Lançamento criado.",
+      );
       FINANCE_KEYS.forEach((key) => queryClient.invalidateQueries({ queryKey: key }));
       onOpenChange(false);
     },
@@ -146,10 +250,41 @@ export function TransacaoDrawer({
     <Sheet open={open} onOpenChange={onOpenChange}>
       <SheetContent side="right" className="w-full overflow-y-auto border-border bg-card sm:max-w-lg">
         <SheetHeader>
-          <SheetTitle>{transacao ? "Editar Lançamento" : "Novo Lançamento"}</SheetTitle>
+          <SheetTitle>
+            {isDuplicate
+              ? "Duplicar Lançamento"
+              : transacao
+                ? "Editar Lançamento"
+                : lockedTipo
+                  ? `Nova ${lockedTipo === "Transferência" ? "Transferência" : lockedTipo}`
+                  : "Novo Lançamento"}
+          </SheetTitle>
         </SheetHeader>
 
         <div className="grid gap-4 px-4 pb-6">
+          {templates.length > 0 && (
+            <div className="grid gap-2">
+              <p className="text-[11px] uppercase tracking-wide text-muted-foreground">Templates Rápidos</p>
+              <div className="flex gap-2 overflow-x-auto pb-1">
+                {templates.map((t) => (
+                  <button
+                    key={t.label}
+                    type="button"
+                    onClick={() => applyTemplate(t)}
+                    className={cn(
+                      "shrink-0 rounded-full border px-3 py-1 text-xs transition-colors",
+                      activeTemplate === t.label
+                        ? "border-primary bg-primary/15 text-primary"
+                        : "border-[#3A3D50] bg-[#2A2D3E] text-foreground hover:border-primary hover:text-primary",
+                    )}
+                  >
+                    {t.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
+
           <div className="grid gap-2">
             <Label>Nome *</Label>
             <Input value={form.nome} onChange={(e) => set({ nome: e.target.value })} placeholder="Ex.: Mensalidade cliente X" />
@@ -160,6 +295,7 @@ export function TransacaoDrawer({
               <Label>Tipo *</Label>
               <Select
                 value={form.tipo}
+                disabled={!!lockedTipo}
                 onValueChange={(v) =>
                   set({
                     tipo: v as TipoTransacao,
