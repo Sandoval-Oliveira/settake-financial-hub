@@ -1,7 +1,7 @@
-import { useMemo, useState } from "react";
+import { useMemo, useRef, useState } from "react";
 import { createFileRoute } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { ArrowUpDown, Pencil, Plus, Trash2 } from "lucide-react";
+import { ArrowDown, ArrowLeftRight, ArrowUp, ArrowUpDown, Copy, Pencil, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -22,6 +22,7 @@ import {
   TIPOS,
   type Transacao,
 } from "@/lib/finance";
+import type { TipoTransacao } from "@/lib/finance";
 import { formatDate, isoDate } from "@/lib/format";
 import { EmptyState, Money, PageHeader, SectionCard, TableSkeleton } from "@/components/finance/ui-bits";
 import { StatusBadge, Temperatura, TipoBadge } from "@/components/finance/badges";
@@ -40,6 +41,49 @@ export const Route = createFileRoute("/lancamentos")({
 });
 
 const PAGE_SIZE = 20;
+
+const COLUMNS = [
+  { key: "vencimento", label: "Vencimento", width: 110 },
+  { key: "nome", label: "Nome", width: 220 },
+  { key: "tipo", label: "Tipo", width: 90 },
+  { key: "natureza", label: "Natureza", width: 130 },
+  { key: "grupo", label: "Grupo", width: 120 },
+  { key: "item", label: "Item", width: 150 },
+  { key: "conta", label: "Conta", width: 90 },
+  { key: "pessoa", label: "Pessoa", width: 140 },
+  { key: "valor", label: "Valor", width: 110 },
+  { key: "status", label: "Status", width: 100 },
+  { key: "temp", label: "Temp.", width: 70 },
+  { key: "acoes", label: "Ações", width: 70 },
+] as const;
+
+function useColumnWidths() {
+  const [widths, setWidths] = useState<Record<string, number>>(() =>
+    Object.fromEntries(COLUMNS.map((c) => [c.key, c.width])),
+  );
+  const drag = useRef<{ key: string; startX: number; startW: number } | null>(null);
+
+  function onMouseDown(key: string, e: React.MouseEvent) {
+    e.preventDefault();
+    e.stopPropagation();
+    drag.current = { key, startX: e.clientX, startW: widths[key] ?? 100 };
+    const move = (ev: MouseEvent) => {
+      const d = drag.current;
+      if (!d) return;
+      const next = Math.max(60, d.startW + (ev.clientX - d.startX));
+      setWidths((w) => ({ ...w, [d.key]: next }));
+    };
+    const up = () => {
+      drag.current = null;
+      window.removeEventListener("mousemove", move);
+      window.removeEventListener("mouseup", up);
+    };
+    window.addEventListener("mousemove", move);
+    window.addEventListener("mouseup", up);
+  }
+
+  return { widths, onMouseDown };
+}
 
 function firstDayOfMonth() {
   const d = new Date();
@@ -66,6 +110,9 @@ function Lancamentos() {
   const [page, setPage] = useState(1);
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [editing, setEditing] = useState<Transacao | null>(null);
+  const [drawerMode, setDrawerMode] = useState<"edit" | "duplicate">("edit");
+  const [lockedTipo, setLockedTipo] = useState<TipoTransacao | undefined>(undefined);
+  const { widths, onMouseDown } = useColumnWidths();
 
   const rows = useMemo(() => {
     const data = (lista.data ?? []).filter((t) => {
@@ -99,6 +146,23 @@ function Lancamentos() {
   function openEdit(id: number) {
     const found = (raw.data ?? []).find((t) => t.id === id) ?? null;
     setEditing(found);
+    setDrawerMode("edit");
+    setLockedTipo(undefined);
+    setDrawerOpen(true);
+  }
+
+  function openDuplicate(id: number) {
+    const found = (raw.data ?? []).find((t) => t.id === id) ?? null;
+    setEditing(found);
+    setDrawerMode("duplicate");
+    setLockedTipo(undefined);
+    setDrawerOpen(true);
+  }
+
+  function openNovo(tipo: TipoTransacao) {
+    setEditing(null);
+    setDrawerMode("edit");
+    setLockedTipo(tipo);
     setDrawerOpen(true);
   }
 
@@ -118,14 +182,23 @@ function Lancamentos() {
         title="Lançamentos"
         subtitle={`${rows.length} lançamento(s) no filtro atual`}
         actions={
-          <Button
-            onClick={() => {
-              setEditing(null);
-              setDrawerOpen(true);
-            }}
-          >
-            <Plus className="mr-1 size-4" /> Novo Lançamento
-          </Button>
+          <div className="flex flex-wrap gap-2">
+            <Button
+              onClick={() => openNovo("Receita")}
+              className="bg-success text-[#0F1117] hover:bg-success/90"
+            >
+              <ArrowUp className="mr-1 size-4" /> Nova Receita
+            </Button>
+            <Button
+              onClick={() => openNovo("Despesa")}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              <ArrowDown className="mr-1 size-4" /> Nova Despesa
+            </Button>
+            <Button onClick={() => openNovo("Transferência")}>
+              <ArrowLeftRight className="mr-1 size-4" /> Nova Transferência
+            </Button>
+          </div>
         }
       />
 
@@ -169,25 +242,35 @@ function Lancamentos() {
           <EmptyState message="Nenhum lançamento encontrado com esses filtros." />
         ) : (
           <div className="overflow-x-auto">
-            <table className="w-full text-sm">
+            <table className="w-full table-fixed text-sm">
+              <colgroup>
+                {COLUMNS.map((c) => (
+                  <col key={c.key} style={{ width: widths[c.key] }} />
+                ))}
+              </colgroup>
               <thead className="text-xs text-muted-foreground">
                 <tr className="border-b border-border">
-                  <th className="px-3 py-2 text-left font-medium">
-                    <button className="flex items-center gap-1" onClick={() => setAsc((v) => !v)}>
-                      Vencimento <ArrowUpDown className="size-3" />
-                    </button>
-                  </th>
-                  <th className="px-3 py-2 text-left font-medium">Nome</th>
-                  <th className="px-3 py-2 text-left font-medium">Tipo</th>
-                  <th className="px-3 py-2 text-left font-medium">Natureza</th>
-                  <th className="px-3 py-2 text-left font-medium">Grupo</th>
-                  <th className="px-3 py-2 text-left font-medium">Item</th>
-                  <th className="px-3 py-2 text-left font-medium">Conta</th>
-                  <th className="px-3 py-2 text-left font-medium">Pessoa</th>
-                  <th className="px-3 py-2 text-right font-medium">Valor</th>
-                  <th className="px-3 py-2 text-left font-medium">Status</th>
-                  <th className="px-3 py-2 text-left font-medium">Temp.</th>
-                  <th className="px-3 py-2 text-right font-medium">Ações</th>
+                  {COLUMNS.map((c) => (
+                    <th
+                      key={c.key}
+                      className={`group relative px-3 py-2 font-medium ${
+                        c.key === "valor" || c.key === "acoes" ? "text-right" : "text-left"
+                      }`}
+                    >
+                      {c.key === "vencimento" ? (
+                        <button className="flex items-center gap-1" onClick={() => setAsc((v) => !v)}>
+                          Vencimento <ArrowUpDown className="size-3" />
+                        </button>
+                      ) : (
+                        <span className="block truncate">{c.label}</span>
+                      )}
+                      <span
+                        role="separator"
+                        onMouseDown={(e) => onMouseDown(c.key, e)}
+                        className="absolute top-0 right-0 h-full w-[2px] cursor-col-resize bg-transparent hover:bg-primary"
+                      />
+                    </th>
+                  ))}
                 </tr>
               </thead>
               <tbody>
@@ -197,14 +280,14 @@ function Lancamentos() {
                     onClick={() => openEdit(t.id)}
                     className={`cursor-pointer hover:bg-surface-hover ${i % 2 ? "bg-secondary/25" : ""}`}
                   >
-                    <td className="px-3 py-2 whitespace-nowrap">{formatDate(t.vencimento)}</td>
-                    <td className="px-3 py-2">{t.nome}</td>
+                    <td className="px-3 py-2 truncate whitespace-nowrap">{formatDate(t.vencimento)}</td>
+                    <td className="px-3 py-2 truncate">{t.nome}</td>
                     <td className="px-3 py-2"><TipoBadge tipo={t.tipo} /></td>
-                    <td className="px-3 py-2 text-muted-foreground">{t.natureza ?? "—"}</td>
-                    <td className="px-3 py-2 text-muted-foreground">{t.grupo ?? "—"}</td>
-                    <td className="px-3 py-2 text-muted-foreground">{t.item ?? "—"}</td>
-                    <td className="px-3 py-2 text-muted-foreground">{t.conta_origem ?? "—"}</td>
-                    <td className="px-3 py-2 text-muted-foreground">{t.pessoa ?? "—"}</td>
+                    <td className="px-3 py-2 truncate text-muted-foreground">{t.natureza ?? "—"}</td>
+                    <td className="px-3 py-2 truncate text-muted-foreground">{t.grupo ?? "—"}</td>
+                    <td className="px-3 py-2 truncate text-muted-foreground">{t.item ?? "—"}</td>
+                    <td className="px-3 py-2 truncate text-muted-foreground">{t.conta_origem ?? "—"}</td>
+                    <td className="px-3 py-2 truncate text-muted-foreground">{t.pessoa ?? "—"}</td>
                     <td className="px-3 py-2 text-right">
                       <Money value={t.valor} colored negative={t.tipo === "Despesa"} />
                     </td>
@@ -217,6 +300,13 @@ function Lancamentos() {
                         onClick={(e) => { e.stopPropagation(); openEdit(t.id); }}
                       >
                         <Pencil className="size-4" />
+                      </button>
+                      <button
+                        aria-label="Duplicar"
+                        className="mr-2 text-muted-foreground hover:text-primary"
+                        onClick={(e) => { e.stopPropagation(); openDuplicate(t.id); }}
+                      >
+                        <Copy className="size-4" />
                       </button>
                       <button
                         aria-label="Excluir"
@@ -248,7 +338,13 @@ function Lancamentos() {
         </div>
       </SectionCard>
 
-      <TransacaoDrawer open={drawerOpen} onOpenChange={setDrawerOpen} transacao={editing} />
+      <TransacaoDrawer
+        open={drawerOpen}
+        onOpenChange={setDrawerOpen}
+        transacao={editing}
+        mode={drawerMode}
+        lockedTipo={lockedTipo}
+      />
     </div>
   );
 }

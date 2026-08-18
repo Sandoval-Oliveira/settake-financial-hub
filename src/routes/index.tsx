@@ -1,6 +1,8 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import {
+  Area,
+  AreaChart,
   Bar,
   BarChart,
   CartesianGrid,
@@ -46,6 +48,85 @@ const chartTooltip = {
   },
   formatter: (value: number | string) => formatMoney(Number(value)),
 };
+
+const MESES_ABREV = ["Jan", "Fev", "Mar", "Abr", "Mai", "Jun", "Jul", "Ago", "Set", "Out", "Nov", "Dez"];
+
+function AreaAnual({
+  title,
+  subtitle,
+  data,
+  dataKey,
+  label,
+  color,
+  gradientId,
+  total,
+  loading,
+}: {
+  title: string;
+  subtitle: string;
+  data: { mes: string; valor: number }[];
+  dataKey: string;
+  label: string;
+  color: string;
+  gradientId: string;
+  total: number;
+  loading: boolean;
+}) {
+  return (
+    <SectionCard
+      title={title}
+      description={subtitle}
+      action={
+        <span
+          className="rounded-full border px-3 py-1 text-xs font-medium tabular"
+          style={{ borderColor: `${color}66`, background: `${color}1A`, color }}
+        >
+          {formatMoney(total)}
+        </span>
+      }
+    >
+      <div className="h-72 p-3">
+        {loading ? (
+          <TableSkeleton rows={4} cols={3} />
+        ) : data.length ? (
+          <ResponsiveContainer width="100%" height="100%">
+            <AreaChart data={data}>
+              <defs>
+                <linearGradient id={gradientId} x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="0%" stopColor={color} stopOpacity={0.3} />
+                  <stop offset="100%" stopColor={color} stopOpacity={0} />
+                </linearGradient>
+              </defs>
+              <CartesianGrid stroke="#2A2D3E" vertical={false} />
+              <XAxis dataKey="mes" stroke="#8B8FA8" fontSize={12} tickLine={false} axisLine={false} />
+              <YAxis
+                stroke="#8B8FA8"
+                fontSize={11}
+                tickLine={false}
+                axisLine={false}
+                width={80}
+                tickFormatter={(v: number) => formatMoney(Number(v))}
+              />
+              <Tooltip {...chartTooltip} />
+              <Area
+                type="monotone"
+                dataKey="valor"
+                name={label}
+                stroke={color}
+                strokeWidth={2.5}
+                fill={`url(#${gradientId})`}
+                dot={false}
+                activeDot={{ r: 6, fill: color, stroke: color }}
+              />
+            </AreaChart>
+          </ResponsiveContainer>
+        ) : (
+          <EmptyState message="Sem dados no ano." />
+        )}
+      </div>
+    </SectionCard>
+  );
+}
 
 function VencimentosTable({
   items,
@@ -116,6 +197,19 @@ function Dashboard() {
   const proximos = cal.filter((c) => !c.atrasado).slice(0, 7);
   const atrasados = cal.filter((c) => c.atrasado).slice(0, 7);
 
+  const anoAtual = new Date().getFullYear();
+  const doAno = (resumo.data ?? []).filter((r) => (r.mes ?? "").startsWith(String(anoAtual)));
+  const serieReceita = doAno.map((r) => ({
+    mes: MESES_ABREV[Number((r.mes ?? "").slice(5, 7)) - 1] ?? formatMonthKey(r.mes),
+    valor: Number(r.receita_bruta ?? 0),
+  }));
+  const serieCaixa = doAno.map((r) => ({
+    mes: MESES_ABREV[Number((r.mes ?? "").slice(5, 7)) - 1] ?? formatMonthKey(r.mes),
+    valor: Number(r.geracao_caixa ?? 0),
+  }));
+  const totalReceita = serieReceita.reduce((s, r) => s + r.valor, 0);
+  const totalCaixa = serieCaixa.reduce((s, r) => s + r.valor, 0);
+
   return (
     <div>
       <PageHeader title="Dashboard" subtitle="Visão geral financeira da SetTake" />
@@ -146,6 +240,31 @@ function Dashboard() {
       </div>
 
       <div className="mt-4 grid gap-4 xl:grid-cols-2">
+        <AreaAnual
+          title="Receita no Ano"
+          subtitle={String(anoAtual)}
+          data={serieReceita}
+          dataKey="valor"
+          label="Receita Bruta"
+          color="#22C55E"
+          gradientId="gradReceita"
+          total={totalReceita}
+          loading={resumo.isLoading}
+        />
+        <AreaAnual
+          title="Geração de Caixa"
+          subtitle="Resultado antes das retiradas dos sócios"
+          data={serieCaixa}
+          dataKey="valor"
+          label="Geração de Caixa"
+          color="#E8B800"
+          gradientId="gradCaixa"
+          total={totalCaixa}
+          loading={resumo.isLoading}
+        />
+      </div>
+
+      <div className="mt-4 grid gap-4 xl:grid-cols-2">
         <SectionCard title="Resultado Mensal" description="Últimos 6 meses">
           <div className="h-72 p-3">
             {resumo.isLoading ? (
@@ -160,7 +279,7 @@ function Dashboard() {
                   <Legend wrapperStyle={{ fontSize: 12, color: "#8B8FA8" }} />
                   <Bar dataKey="receita" name="Receita" fill="#22C55E" radius={[4, 4, 0, 0]} />
                   <Bar dataKey="despesa" name="Despesa" fill="#EF4444" radius={[4, 4, 0, 0]} />
-                  <Line dataKey="resultado" name="Resultado" stroke="#6C63FF" strokeWidth={2} dot={false} />
+                  <Line dataKey="resultado" name="Resultado" stroke="#E8B800" strokeWidth={2} dot={false} />
                 </ComposedChart>
               </ResponsiveContainer>
             ) : (
@@ -178,8 +297,8 @@ function Dashboard() {
                 <BarChart data={servicosMes} layout="vertical" margin={{ left: 20 }}>
                   <defs>
                     <linearGradient id="violet" x1="0" y1="0" x2="1" y2="0">
-                      <stop offset="0%" stopColor="#6C63FF" />
-                      <stop offset="100%" stopColor="#A78BFA" />
+                      <stop offset="0%" stopColor="#E8B800" />
+                      <stop offset="100%" stopColor="#F5820A" />
                     </linearGradient>
                   </defs>
                   <CartesianGrid stroke="#2A2D3E" horizontal={false} />
@@ -212,20 +331,6 @@ function Dashboard() {
         </SectionCard>
       </div>
 
-      <div className="mt-4 grid gap-4 sm:grid-cols-3">
-        {[
-          { label: "Geração de Caixa", value: resumoMes?.geracao_caixa },
-          { label: "Distribuição Pablo", value: resumoMes?.distribuicao_pablo },
-          { label: "Distribuição Sandoval", value: resumoMes?.distribuicao_sandoval },
-        ].map((m) => (
-          <div key={m.label} className="rounded-xl border border-border bg-card p-4">
-            <p className="text-xs text-muted-foreground">{m.label}</p>
-            <p className="mt-1 text-xl font-semibold">
-              <Money value={m.value ?? 0} colored />
-            </p>
-          </div>
-        ))}
-      </div>
     </div>
   );
 }
