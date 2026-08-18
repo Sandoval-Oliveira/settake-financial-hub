@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { Fragment, useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { ChevronDown, ChevronRight, Download } from "lucide-react";
 import {
@@ -358,8 +358,8 @@ export function RelatorioCategorias() {
                     const chaveN = `n:${n.nome}`;
                     const abertoN = abertos[chaveN];
                     return (
-                      <>
-                        <tr key={chaveN} className="border-b border-border/60 font-semibold">
+                      <Fragment key={chaveN}>
+                        <tr className="border-b border-border/60 font-semibold">
                           <td className="px-3 py-2">
                             <button type="button" className="flex items-center gap-1" onClick={() => toggle(chaveN)}>
                               {abertoN ? <ChevronDown className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
@@ -385,8 +385,8 @@ export function RelatorioCategorias() {
                             const chaveG = `${chaveN}|g:${g.nome}`;
                             const abertoG = abertos[chaveG];
                             return (
-                              <>
-                                <tr key={chaveG} className="bg-secondary/20">
+                              <Fragment key={chaveG}>
+                                <tr className="bg-secondary/20">
                                   <td className="py-2 pl-9 pr-3">
                                     <button type="button" className="flex items-center gap-1" onClick={() => toggle(chaveG)}>
                                       {abertoG ? <ChevronDown className="h-3.5 w-3.5" /> : <ChevronRight className="h-3.5 w-3.5" />}
@@ -412,10 +412,10 @@ export function RelatorioCategorias() {
                                       <td className="px-3 py-1.5" />
                                     </tr>
                                   ))}
-                              </>
+                              </Fragment>
                             );
                           })}
-                      </>
+                      </Fragment>
                     );
                   })}
                 </tbody>
