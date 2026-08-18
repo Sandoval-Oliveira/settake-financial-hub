@@ -105,6 +105,7 @@ function fromTransacao(t: Transacao): FormState {
     conta_origem_id: t.conta_origem_id ? String(t.conta_origem_id) : "",
     conta_destino_id: t.conta_destino_id ? String(t.conta_destino_id) : "",
     pessoa_id: t.pessoa_id ? String(t.pessoa_id) : "",
+    conciliada: t.conciliada ?? false,
   };
 }
 
