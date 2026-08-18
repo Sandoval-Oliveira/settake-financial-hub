@@ -98,12 +98,12 @@ function Relatorios() {
 
       <Tabs defaultValue="mensal">
         <TabsList className="bg-transparent p-0 gap-2">
-          {[
+          {([
             ["mensal", "Mensal"],
             ["servicos", "Serviços"],
             ["clientes", "Clientes"],
             ["contas", "Contas"],
-          ].map(([v, label]) => (
+          ] as const).map(([v, label]) => (
             <TabsTrigger
               key={v}
               value={v}
