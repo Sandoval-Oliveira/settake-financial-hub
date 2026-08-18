@@ -53,6 +53,7 @@ export interface Transacao {
   conta_destino_id: number | null;
   pessoa_id: number | null;
   vencimento: string;
+  conciliada: boolean;
 }
 
 export interface TransacaoCompleta extends Omit<Transacao, "natureza_id" | "grupo_id" | "item_id" | "conta_origem_id" | "conta_destino_id" | "pessoa_id"> {
@@ -62,6 +63,7 @@ export interface TransacaoCompleta extends Omit<Transacao, "natureza_id" | "grup
   conta_origem: string | null;
   conta_destino: string | null;
   pessoa: string | null;
+  conciliada: boolean;
 }
 
 export interface SaldoConta {
