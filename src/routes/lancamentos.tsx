@@ -53,6 +53,7 @@ const COLUMNS = [
   { key: "pessoa", label: "Pessoa", width: 140 },
   { key: "valor", label: "Valor", width: 110 },
   { key: "status", label: "Status", width: 100 },
+  { key: "conciliada", label: "Conc.", width: 60 },
   { key: "temp", label: "Temp.", width: 70 },
   { key: "acoes", label: "Ações", width: 70 },
 ] as const;
