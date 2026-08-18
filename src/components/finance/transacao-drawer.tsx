@@ -70,6 +70,7 @@ interface FormState {
   conta_origem_id: string;
   conta_destino_id: string;
   pessoa_id: string;
+  conciliada: boolean;
 }
 
 function emptyForm(): FormState {
