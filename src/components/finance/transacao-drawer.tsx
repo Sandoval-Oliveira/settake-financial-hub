@@ -448,6 +448,18 @@ export function TransacaoDrawer({
             </div>
           )}
 
+          <div className="flex items-center justify-between rounded-lg border border-border bg-secondary/40 p-3">
+            <div className="grid gap-0.5">
+              <Label htmlFor="conciliada" className="cursor-pointer">Transação Conciliada (Verificada)</Label>
+              <p className="text-xs text-muted-foreground">Marque quando o valor estiver confirmado no extrato.</p>
+            </div>
+            <Switch
+              id="conciliada"
+              checked={form.conciliada}
+              onCheckedChange={(v) => set({ conciliada: v })}
+            />
+          </div>
+
           <div className="mt-2 flex justify-end gap-2">
             <Button variant="outline" onClick={() => onOpenChange(false)}>Cancelar</Button>
             <Button onClick={() => mutation.mutate()} disabled={mutation.isPending}>
