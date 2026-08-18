@@ -60,7 +60,7 @@ export function formatMonthKey(mes: string | null | undefined): string {
   if (!mes) return "—";
   const [y, m] = mes.split("-").map(Number);
   if (!y || !m) return mes;
-  return `${MONTH_NAMES[m - 1].slice(0, 3)}/${String(y).slice(2)}`;
+  return `${(MONTH_NAMES[m - 1] ?? "").slice(0, 3)}/${String(y).slice(2)}`;
 }
 
 export function monthKey(date: Date): string {
