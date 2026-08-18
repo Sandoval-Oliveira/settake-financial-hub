@@ -305,6 +305,21 @@ function Lancamentos() {
                       <Money value={t.valor} colored negative={t.tipo === "Despesa"} />
                     </td>
                     <td className="px-3 py-2"><StatusBadge status={t.status} /></td>
+                    <td className="px-3 py-2">
+                      <button
+                        aria-label={t.conciliada ? "Marcar como não conciliado" : "Marcar como conciliado"}
+                        className={cn(
+                          "transition-colors",
+                          t.conciliada ? "text-success" : "text-muted-foreground hover:text-success",
+                        )}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          toggleConciliada.mutate({ id: t.id, conciliada: t.conciliada });
+                        }}
+                      >
+                        {t.conciliada ? <CheckSquare2 className="size-5" /> : <Square className="size-5" />}
+                      </button>
+                    </td>
                     <td className="px-3 py-2"><Temperatura value={t.temperatura} /></td>
                     <td className="px-3 py-2 text-right whitespace-nowrap">
                       <button
