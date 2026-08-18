@@ -1,7 +1,7 @@
 import { useMemo, useRef, useState } from "react";
 import { createFileRoute } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { ArrowDown, ArrowLeftRight, ArrowUp, ArrowUpDown, Copy, Pencil, Trash2 } from "lucide-react";
+import { ArrowDown, ArrowLeftRight, ArrowUp, ArrowUpDown, Copy, Pencil, Square, CheckSquare2, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -23,6 +23,7 @@ import {
   type Transacao,
 } from "@/lib/finance";
 import type { TipoTransacao } from "@/lib/finance";
+import { cn } from "@/lib/utils";
 import { formatDate, isoDate } from "@/lib/format";
 import { EmptyState, Money, PageHeader, SectionCard, TableSkeleton } from "@/components/finance/ui-bits";
 import { StatusBadge, Temperatura, TipoBadge } from "@/components/finance/badges";
@@ -53,6 +54,7 @@ const COLUMNS = [
   { key: "pessoa", label: "Pessoa", width: 140 },
   { key: "valor", label: "Valor", width: 110 },
   { key: "status", label: "Status", width: 100 },
+  { key: "conciliada", label: "Conc.", width: 60 },
   { key: "temp", label: "Temp.", width: 70 },
   { key: "acoes", label: "Ações", width: 70 },
 ] as const;
@@ -138,6 +140,17 @@ function Lancamentos() {
     mutationFn: (id: number) => writeRow("transacoes", "delete", {}, id),
     onSuccess: () => {
       toast.success("Lançamento excluído.");
+      FINANCE_KEYS.forEach((key) => queryClient.invalidateQueries({ queryKey: key }));
+    },
+    onError: (e: Error) => toast.error(e.message),
+  });
+
+  const toggleConciliada = useMutation({
+    mutationFn: async ({ id, conciliada }: { id: number; conciliada: boolean }) => {
+      await writeRow("transacoes", "update", { conciliada: !conciliada }, id);
+    },
+    onSuccess: (_, vars) => {
+      toast.success(vars.conciliada ? "Lançamento marcado como não conciliado." : "Lançamento conciliado.");
       FINANCE_KEYS.forEach((key) => queryClient.invalidateQueries({ queryKey: key }));
     },
     onError: (e: Error) => toast.error(e.message),
@@ -292,6 +305,21 @@ function Lancamentos() {
                       <Money value={t.valor} colored negative={t.tipo === "Despesa"} />
                     </td>
                     <td className="px-3 py-2"><StatusBadge status={t.status} /></td>
+                    <td className="px-3 py-2">
+                      <button
+                        aria-label={t.conciliada ? "Marcar como não conciliado" : "Marcar como conciliado"}
+                        className={cn(
+                          "transition-colors",
+                          t.conciliada ? "text-success" : "text-muted-foreground hover:text-success",
+                        )}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          toggleConciliada.mutate({ id: t.id, conciliada: t.conciliada });
+                        }}
+                      >
+                        {t.conciliada ? <CheckSquare2 className="size-5" /> : <Square className="size-5" />}
+                      </button>
+                    </td>
                     <td className="px-3 py-2"><Temperatura value={t.temperatura} /></td>
                     <td className="px-3 py-2 text-right whitespace-nowrap">
                       <button

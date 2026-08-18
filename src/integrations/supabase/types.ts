@@ -129,6 +129,7 @@ export type Database = {
       transacoes: {
         Row: {
           atualizado_em: string
+          conciliada: boolean
           conta_destino_id: number | null
           conta_origem_id: number | null
           criado_em: string
@@ -148,6 +149,7 @@ export type Database = {
         }
         Insert: {
           atualizado_em?: string
+          conciliada?: boolean
           conta_destino_id?: number | null
           conta_origem_id?: number | null
           criado_em?: string
@@ -167,6 +169,7 @@ export type Database = {
         }
         Update: {
           atualizado_em?: string
+          conciliada?: boolean
           conta_destino_id?: number | null
           conta_origem_id?: number | null
           criado_em?: string

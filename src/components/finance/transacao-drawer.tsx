@@ -6,6 +6,7 @@ import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sh
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Switch } from "@/components/ui/switch";
 import {
   Select,
   SelectContent,
@@ -69,6 +70,7 @@ interface FormState {
   conta_origem_id: string;
   conta_destino_id: string;
   pessoa_id: string;
+  conciliada: boolean;
 }
 
 function emptyForm(): FormState {
@@ -85,6 +87,7 @@ function emptyForm(): FormState {
     conta_origem_id: "",
     conta_destino_id: "",
     pessoa_id: "",
+    conciliada: false,
   };
 }
 
@@ -102,6 +105,7 @@ function fromTransacao(t: Transacao): FormState {
     conta_origem_id: t.conta_origem_id ? String(t.conta_origem_id) : "",
     conta_destino_id: t.conta_destino_id ? String(t.conta_destino_id) : "",
     pessoa_id: t.pessoa_id ? String(t.pessoa_id) : "",
+    conciliada: t.conciliada ?? false,
   };
 }
 
@@ -228,6 +232,7 @@ export function TransacaoDrawer({
         conta_destino_id: form.tipo === "Transferência" ? Number(form.conta_destino_id) : null,
         pessoa_id: form.tipo === "Transferência" || !form.pessoa_id ? null : Number(form.pessoa_id),
         vencimento: form.vencimento,
+        conciliada: form.conciliada,
       };
 
       await writeRow("transacoes", transacao && !isDuplicate ? "update" : "insert", payload, transacao?.id);
@@ -442,6 +447,18 @@ export function TransacaoDrawer({
               </Select>
             </div>
           )}
+
+          <div className="flex items-center justify-between rounded-lg border border-border bg-secondary/40 p-3">
+            <div className="grid gap-0.5">
+              <Label htmlFor="conciliada" className="cursor-pointer">Transação Conciliada (Verificada)</Label>
+              <p className="text-xs text-muted-foreground">Marque quando o valor estiver confirmado no extrato.</p>
+            </div>
+            <Switch
+              id="conciliada"
+              checked={form.conciliada}
+              onCheckedChange={(v) => set({ conciliada: v })}
+            />
+          </div>
 
           <div className="mt-2 flex justify-end gap-2">
             <Button variant="outline" onClick={() => onOpenChange(false)}>Cancelar</Button>
