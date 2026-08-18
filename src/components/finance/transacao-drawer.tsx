@@ -87,6 +87,7 @@ function emptyForm(): FormState {
     conta_origem_id: "",
     conta_destino_id: "",
     pessoa_id: "",
+    conciliada: false,
   };
 }
 
