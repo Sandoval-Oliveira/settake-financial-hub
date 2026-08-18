@@ -326,6 +326,7 @@ export type Database = {
       transacoes_completas: {
         Row: {
           atualizado_em: string | null
+          conciliada: boolean | null
           conta_destino: string | null
           conta_origem: string | null
           criado_em: string | null
