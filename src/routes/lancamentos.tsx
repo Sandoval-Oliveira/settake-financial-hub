@@ -144,6 +144,17 @@ function Lancamentos() {
     onError: (e: Error) => toast.error(e.message),
   });
 
+  const toggleConciliada = useMutation({
+    mutationFn: async ({ id, conciliada }: { id: number; conciliada: boolean }) => {
+      await writeRow("transacoes", "update", { conciliada: !conciliada }, id);
+    },
+    onSuccess: (_, vars) => {
+      toast.success(vars.conciliada ? "Lançamento marcado como não conciliado." : "Lançamento conciliado.");
+      FINANCE_KEYS.forEach((key) => queryClient.invalidateQueries({ queryKey: key }));
+    },
+    onError: (e: Error) => toast.error(e.message),
+  });
+
   function openEdit(id: number) {
     const found = (raw.data ?? []).find((t) => t.id === id) ?? null;
     setEditing(found);
