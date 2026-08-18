@@ -18,7 +18,7 @@ export function StatusBadge({ status }: { status: StatusTransacao }) {
 const tipoStyles: Record<TipoTransacao, string> = {
   Receita: "border-success/40 bg-success/10 text-success",
   Despesa: "border-destructive/40 bg-destructive/10 text-destructive",
-  "Transferência": "border-primary/40 bg-primary/10 text-primary",
+  "Transferência": "border-primary bg-primary text-primary-foreground",
 };
 
 export function TipoBadge({ tipo }: { tipo: TipoTransacao }) {
