@@ -23,6 +23,7 @@ import {
   type Transacao,
 } from "@/lib/finance";
 import type { TipoTransacao } from "@/lib/finance";
+import { cn } from "@/lib/utils";
 import { formatDate, isoDate } from "@/lib/format";
 import { EmptyState, Money, PageHeader, SectionCard, TableSkeleton } from "@/components/finance/ui-bits";
 import { StatusBadge, Temperatura, TipoBadge } from "@/components/finance/badges";
