@@ -1,7 +1,7 @@
 import { useMemo, useRef, useState } from "react";
 import { createFileRoute } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { ArrowDown, ArrowLeftRight, ArrowUp, ArrowUpDown, CheckSquare2, Copy, Pencil, Trash2 } from "lucide-react";
+import { ArrowDown, ArrowLeftRight, ArrowUp, ArrowUpDown, Copy, Pencil, Square, CheckSquare2, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
