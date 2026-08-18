@@ -201,8 +201,11 @@ function Relatorios() {
           </SectionCard>
         </TabsContent>
 
+        <TabsContent value="categorias" className="mt-4">
+          <RelatorioCategorias />
+        </TabsContent>
+
         <TabsContent value="servicos" className="mt-4 space-y-4">
-          {null}
           <Select value={mesServico} onValueChange={setMesServico}>
             <SelectTrigger className="w-52"><SelectValue /></SelectTrigger>
             <SelectContent>
