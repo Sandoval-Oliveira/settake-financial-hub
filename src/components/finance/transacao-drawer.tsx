@@ -57,7 +57,6 @@ const TEMPLATES_DESPESA: Template[] = [
 const TEMPLATES_RECEITA: Template[] = [
   { label: "Plano Full", nome: "Plano Full", natureza_id: 1, grupo: "Recorrência", item: "Plano Full", status: "A Receber", temperatura: "Frio" },
   { label: "Plano Pocket", nome: "Plano Pocket", natureza_id: 1, grupo: "Recorrência", item: "Plano Pocket", status: "A Receber", temperatura: "Frio" },
-  { label: "Diária", nome: "Diária de Captação", natureza_id: 1, grupo: "Projeto", item: "Diária de Captação", status: "A Receber", temperatura: "Quente" },
   { label: "Diária de Captação", nome: "Diária de Captação", natureza_id: 1, grupo: "Projeto", item: "Diária de Captação", status: "A Receber", temperatura: "Quente" },
   { label: "Eventos", nome: "Eventos", natureza_id: 1, grupo: "Projeto", item: "Eventos", status: "A Receber", temperatura: "Quente" },
   { label: "Vídeo Institucional", nome: "Vídeo Institucional", natureza_id: 1, grupo: "Projeto", item: "Vídeo Institucional", status: "A Receber", temperatura: "Quente" },
