@@ -1,6 +1,7 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { createFileRoute } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
+import { GripVertical } from "lucide-react";
 import {
   Area,
   AreaChart,
@@ -21,10 +22,12 @@ import {
   resumoMensalQuery,
   saldoContasQuery,
 } from "@/lib/finance";
+import type { ResumoMensal } from "@/lib/finance";
 import { formatDate, formatMonthKey, formatMoney, formatPercent, MONTH_NAMES, monthKey } from "@/lib/format";
 import { EmptyState, Money, PageHeader, SectionCard, TableSkeleton } from "@/components/finance/ui-bits";
 import { PessoaBadge } from "@/components/finance/badges";
 import { RelatorioCategorias } from "@/components/finance/relatorio-categorias";
+import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/relatorios")({
   head: () => ({
@@ -49,6 +52,41 @@ const tooltipProps = {
   formatter: (value: number | string) => formatMoney(Number(value)),
 };
 
+const MENSAL_ORDER_KEY = "settake:relatorios:mensal:order";
+
+type MensalField =
+  | "receita_bruta"
+  | "despesa_total"
+  | "resultado"
+  | "custo_fixo"
+  | "custo_variavel"
+  | "capex"
+  | "crescimento"
+  | "total_socios"
+  | "distribuicao_pablo"
+  | "distribuicao_sandoval"
+  | "geracao_caixa";
+
+const MENSAL_COLUMNS: { key: MensalField; label: string; colored?: boolean }[] = [
+  { key: "receita_bruta", label: "Receita Bruta" },
+  { key: "despesa_total", label: "Despesa Total" },
+  { key: "resultado", label: "Resultado", colored: true },
+  { key: "custo_fixo", label: "Custo Fixo" },
+  { key: "custo_variavel", label: "Custo Variável" },
+  { key: "capex", label: "CAPEX" },
+  { key: "crescimento", label: "Crescimento" },
+  { key: "total_socios", label: "Sócios" },
+  { key: "distribuicao_pablo", label: "Dist. Pablo" },
+  { key: "distribuicao_sandoval", label: "Dist. Sandoval" },
+  { key: "geracao_caixa", label: "Geração de Caixa", colored: true },
+];
+
+const MENSAL_DEFAULT_ORDER = MENSAL_COLUMNS.map((c) => c.key);
+const MENSAL_MAP = Object.fromEntries(MENSAL_COLUMNS.map((c) => [c.key, c])) as Record<
+  MensalField,
+  (typeof MENSAL_COLUMNS)[number]
+>;
+
 function Relatorios() {
   const resumo = useQuery(resumoMensalQuery);
   const servicos = useQuery(receitaPorServicoQuery);
@@ -58,6 +96,38 @@ function Relatorios() {
   const anoAtual = String(new Date().getFullYear());
   const [ano, setAno] = useState(anoAtual);
   const [mesServico, setMesServico] = useState(monthKey(new Date()));
+  const [mensalOrder, setMensalOrder] = useState<MensalField[]>(MENSAL_DEFAULT_ORDER);
+  const [dragCol, setDragCol] = useState<MensalField | null>(null);
+  const [dropCol, setDropCol] = useState<MensalField | null>(null);
+
+  useEffect(() => {
+    try {
+      const raw = localStorage.getItem(MENSAL_ORDER_KEY);
+      if (!raw) return;
+      const parsed = (JSON.parse(raw) as MensalField[]).filter((k) => MENSAL_DEFAULT_ORDER.includes(k));
+      setMensalOrder([...parsed, ...MENSAL_DEFAULT_ORDER.filter((k) => !parsed.includes(k))]);
+    } catch {
+      /* ignore */
+    }
+  }, []);
+
+  function reorderMensal(target: MensalField) {
+    if (!dragCol || dragCol === target) {
+      setDragCol(null);
+      setDropCol(null);
+      return;
+    }
+    const next = mensalOrder.filter((k) => k !== dragCol);
+    next.splice(next.indexOf(target), 0, dragCol);
+    setMensalOrder(next);
+    try {
+      localStorage.setItem(MENSAL_ORDER_KEY, JSON.stringify(next));
+    } catch {
+      /* ignore */
+    }
+    setDragCol(null);
+    setDropCol(null);
+  }
 
   const anos = useMemo(() => {
     const set = new Set((resumo.data ?? []).map((r) => r.mes.slice(0, 4)));
@@ -80,13 +150,16 @@ function Relatorios() {
       custo_fixo: acc.custo_fixo + Number(r.custo_fixo ?? 0),
       custo_variavel: acc.custo_variavel + Number(r.custo_variavel ?? 0),
       capex: acc.capex + Number(r.capex ?? 0),
+      crescimento: acc.crescimento + Number(r.crescimento ?? 0),
+      total_socios: acc.total_socios + Number(r.total_socios ?? 0),
       distribuicao_pablo: acc.distribuicao_pablo + Number(r.distribuicao_pablo ?? 0),
       distribuicao_sandoval: acc.distribuicao_sandoval + Number(r.distribuicao_sandoval ?? 0),
       geracao_caixa: acc.geracao_caixa + Number(r.geracao_caixa ?? 0),
     }),
     {
       receita_bruta: 0, despesa_total: 0, resultado: 0, custo_fixo: 0,
-      custo_variavel: 0, capex: 0, distribuicao_pablo: 0, distribuicao_sandoval: 0, geracao_caixa: 0,
+      custo_variavel: 0, capex: 0, crescimento: 0, total_socios: 0,
+      distribuicao_pablo: 0, distribuicao_sandoval: 0, geracao_caixa: 0,
     },
   );
 
