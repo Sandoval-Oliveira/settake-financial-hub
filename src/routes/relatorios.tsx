@@ -207,8 +207,27 @@ function Relatorios() {
                 <table className="w-full text-sm">
                   <thead className="text-xs text-muted-foreground">
                     <tr className="border-b border-border">
-                      {["Mês", "Receita Bruta", "Despesa Total", "Resultado", "Custo Fixo", "Custo Variável", "CAPEX", "Crescimento", "Dist. Pablo", "Dist. Sandoval", "Geração de Caixa"].map((h, i) => (
-                        <th key={h} className={`px-3 py-2 font-medium ${i === 0 ? "text-left" : "text-right"}`}>{h}</th>
+                      <th className="px-3 py-2 text-left font-medium">Mês</th>
+                      {mensalOrder.map((key) => (
+                        <th
+                          key={key}
+                          draggable
+                          onDragStart={() => setDragCol(key)}
+                          onDragOver={(e) => { e.preventDefault(); setDropCol(key); }}
+                          onDragLeave={() => setDropCol((c) => (c === key ? null : c))}
+                          onDrop={() => reorderMensal(key)}
+                          onDragEnd={() => { setDragCol(null); setDropCol(null); }}
+                          className={cn(
+                            "group relative cursor-grab px-3 py-2 text-right font-medium active:cursor-grabbing",
+                            dragCol === key && "opacity-50",
+                            dropCol === key && dragCol && dropCol !== dragCol && "border-l-2 border-primary",
+                          )}
+                        >
+                          <span className="inline-flex items-center gap-1">
+                            <GripVertical className="size-3 opacity-0 transition-opacity group-hover:opacity-60" />
+                            {MENSAL_MAP[key].label}
+                          </span>
+                        </th>
                       ))}
                     </tr>
                   </thead>
@@ -216,30 +235,28 @@ function Relatorios() {
                     {linhas.map((r, i) => (
                       <tr key={r.mes} className={i % 2 ? "bg-secondary/25" : undefined}>
                         <td className="px-3 py-2">{formatMonthKey(r.mes)}</td>
-                        <td className="px-3 py-2 text-right tabular">{formatMoney(r.receita_bruta)}</td>
-                        <td className="px-3 py-2 text-right tabular">{formatMoney(r.despesa_total)}</td>
-                        <td className="px-3 py-2 text-right"><Money value={r.resultado} colored /></td>
-                        <td className="px-3 py-2 text-right tabular">{formatMoney(r.custo_fixo)}</td>
-                        <td className="px-3 py-2 text-right tabular">{formatMoney(r.custo_variavel)}</td>
-                        <td className="px-3 py-2 text-right tabular">{formatMoney(r.capex)}</td>
-                        <td className="px-3 py-2 text-right tabular">{formatPercent(r.crescimento)}</td>
-                        <td className="px-3 py-2 text-right tabular">{formatMoney(r.distribuicao_pablo)}</td>
-                        <td className="px-3 py-2 text-right tabular">{formatMoney(r.distribuicao_sandoval)}</td>
-                        <td className="px-3 py-2 text-right"><Money value={r.geracao_caixa} colored /></td>
+                        {mensalOrder.map((key) => (
+                          <td key={key} className="px-3 py-2 text-right tabular">
+                            {MENSAL_MAP[key].colored ? (
+                              <Money value={r[key as keyof ResumoMensal] as number} colored />
+                            ) : (
+                              formatMoney(r[key as keyof ResumoMensal] as number)
+                            )}
+                          </td>
+                        ))}
                       </tr>
                     ))}
                     <tr className="border-t border-border font-semibold">
                       <td className="px-3 py-2">Total</td>
-                      <td className="px-3 py-2 text-right tabular">{formatMoney(totais.receita_bruta)}</td>
-                      <td className="px-3 py-2 text-right tabular">{formatMoney(totais.despesa_total)}</td>
-                      <td className="px-3 py-2 text-right"><Money value={totais.resultado} colored /></td>
-                      <td className="px-3 py-2 text-right tabular">{formatMoney(totais.custo_fixo)}</td>
-                      <td className="px-3 py-2 text-right tabular">{formatMoney(totais.custo_variavel)}</td>
-                      <td className="px-3 py-2 text-right tabular">{formatMoney(totais.capex)}</td>
-                      <td className="px-3 py-2 text-right">—</td>
-                      <td className="px-3 py-2 text-right tabular">{formatMoney(totais.distribuicao_pablo)}</td>
-                      <td className="px-3 py-2 text-right tabular">{formatMoney(totais.distribuicao_sandoval)}</td>
-                      <td className="px-3 py-2 text-right"><Money value={totais.geracao_caixa} colored /></td>
+                      {mensalOrder.map((key) => (
+                        <td key={key} className="px-3 py-2 text-right tabular">
+                          {MENSAL_MAP[key].colored ? (
+                            <Money value={totais[key]} colored />
+                          ) : (
+                            formatMoney(totais[key])
+                          )}
+                        </td>
+                      ))}
                     </tr>
                   </tbody>
                 </table>
