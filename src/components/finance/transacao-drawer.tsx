@@ -49,12 +49,18 @@ const TEMPLATES_DESPESA: Template[] = [
   { label: "Transporte", nome: "Transporte", natureza_id: 4, grupo: "Mobilidade", item: "Transporte", status: "A Pagar", temperatura: "Quente" },
   { label: "DAS", nome: "Impostos — DAS", natureza_id: 4, grupo: "Fiscal", item: "Impostos — DAS", status: "A Pagar", temperatura: "Quente" },
   { label: "Taxa Pix", nome: "Taxa de Recebimento", natureza_id: 4, grupo: "Fiscal", item: "Taxa de Recebimento", status: "Concluído", temperatura: "Quente" },
+  { label: "Taxa Notificação", nome: "Taxa de Notificação", natureza_id: 4, grupo: "Fiscal", item: "Taxa de Notificação", status: "Concluído", temperatura: "Quente" },
+  { label: "Pablo", nome: "Pix para Pablo Junqueira", natureza_id: 7, grupo: "Pablo", item: "Distribuição de Lucros", status: "A Pagar", temperatura: "Quente" },
+  { label: "Sandoval", nome: "Pix para Sandoval de Oliveira", natureza_id: 7, grupo: "Sandoval", item: "Distribuição de Lucros", status: "A Pagar", temperatura: "Quente" },
 ];
 
 const TEMPLATES_RECEITA: Template[] = [
   { label: "Plano Full", nome: "Plano Full", natureza_id: 1, grupo: "Recorrência", item: "Plano Full", status: "A Receber", temperatura: "Frio" },
   { label: "Plano Pocket", nome: "Plano Pocket", natureza_id: 1, grupo: "Recorrência", item: "Plano Pocket", status: "A Receber", temperatura: "Frio" },
   { label: "Diária", nome: "Diária de Captação", natureza_id: 1, grupo: "Projeto", item: "Diária de Captação", status: "A Receber", temperatura: "Quente" },
+  { label: "Diária de Captação", nome: "Diária de Captação", natureza_id: 1, grupo: "Projeto", item: "Diária de Captação", status: "A Receber", temperatura: "Quente" },
+  { label: "Eventos", nome: "Eventos", natureza_id: 1, grupo: "Projeto", item: "Eventos", status: "A Receber", temperatura: "Quente" },
+  { label: "Vídeo Institucional", nome: "Vídeo Institucional", natureza_id: 1, grupo: "Projeto", item: "Vídeo Institucional", status: "A Receber", temperatura: "Quente" },
 ];
 
 interface FormState {
