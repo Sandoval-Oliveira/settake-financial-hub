@@ -1,6 +1,7 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { createFileRoute } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
+import { GripVertical } from "lucide-react";
 import {
   Area,
   AreaChart,
@@ -21,10 +22,12 @@ import {
   resumoMensalQuery,
   saldoContasQuery,
 } from "@/lib/finance";
+import type { ResumoMensal } from "@/lib/finance";
 import { formatDate, formatMonthKey, formatMoney, formatPercent, MONTH_NAMES, monthKey } from "@/lib/format";
 import { EmptyState, Money, PageHeader, SectionCard, TableSkeleton } from "@/components/finance/ui-bits";
 import { PessoaBadge } from "@/components/finance/badges";
 import { RelatorioCategorias } from "@/components/finance/relatorio-categorias";
+import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/relatorios")({
   head: () => ({
@@ -49,6 +52,41 @@ const tooltipProps = {
   formatter: (value: number | string) => formatMoney(Number(value)),
 };
 
+const MENSAL_ORDER_KEY = "settake:relatorios:mensal:order";
+
+type MensalField =
+  | "receita_bruta"
+  | "despesa_total"
+  | "resultado"
+  | "custo_fixo"
+  | "custo_variavel"
+  | "capex"
+  | "crescimento"
+  | "total_socios"
+  | "distribuicao_pablo"
+  | "distribuicao_sandoval"
+  | "geracao_caixa";
+
+const MENSAL_COLUMNS: { key: MensalField; label: string; colored?: boolean }[] = [
+  { key: "receita_bruta", label: "Receita Bruta" },
+  { key: "despesa_total", label: "Despesa Total" },
+  { key: "resultado", label: "Resultado", colored: true },
+  { key: "custo_fixo", label: "Custo Fixo" },
+  { key: "custo_variavel", label: "Custo Variável" },
+  { key: "capex", label: "CAPEX" },
+  { key: "crescimento", label: "Crescimento" },
+  { key: "total_socios", label: "Sócios" },
+  { key: "distribuicao_pablo", label: "Dist. Pablo" },
+  { key: "distribuicao_sandoval", label: "Dist. Sandoval" },
+  { key: "geracao_caixa", label: "Geração de Caixa", colored: true },
+];
+
+const MENSAL_DEFAULT_ORDER = MENSAL_COLUMNS.map((c) => c.key);
+const MENSAL_MAP = Object.fromEntries(MENSAL_COLUMNS.map((c) => [c.key, c])) as Record<
+  MensalField,
+  (typeof MENSAL_COLUMNS)[number]
+>;
+
 function Relatorios() {
   const resumo = useQuery(resumoMensalQuery);
   const servicos = useQuery(receitaPorServicoQuery);
@@ -58,6 +96,38 @@ function Relatorios() {
   const anoAtual = String(new Date().getFullYear());
   const [ano, setAno] = useState(anoAtual);
   const [mesServico, setMesServico] = useState(monthKey(new Date()));
+  const [mensalOrder, setMensalOrder] = useState<MensalField[]>(MENSAL_DEFAULT_ORDER);
+  const [dragCol, setDragCol] = useState<MensalField | null>(null);
+  const [dropCol, setDropCol] = useState<MensalField | null>(null);
+
+  useEffect(() => {
+    try {
+      const raw = localStorage.getItem(MENSAL_ORDER_KEY);
+      if (!raw) return;
+      const parsed = (JSON.parse(raw) as MensalField[]).filter((k) => MENSAL_DEFAULT_ORDER.includes(k));
+      setMensalOrder([...parsed, ...MENSAL_DEFAULT_ORDER.filter((k) => !parsed.includes(k))]);
+    } catch {
+      /* ignore */
+    }
+  }, []);
+
+  function reorderMensal(target: MensalField) {
+    if (!dragCol || dragCol === target) {
+      setDragCol(null);
+      setDropCol(null);
+      return;
+    }
+    const next = mensalOrder.filter((k) => k !== dragCol);
+    next.splice(next.indexOf(target), 0, dragCol);
+    setMensalOrder(next);
+    try {
+      localStorage.setItem(MENSAL_ORDER_KEY, JSON.stringify(next));
+    } catch {
+      /* ignore */
+    }
+    setDragCol(null);
+    setDropCol(null);
+  }
 
   const anos = useMemo(() => {
     const set = new Set((resumo.data ?? []).map((r) => r.mes.slice(0, 4)));
@@ -80,13 +150,16 @@ function Relatorios() {
       custo_fixo: acc.custo_fixo + Number(r.custo_fixo ?? 0),
       custo_variavel: acc.custo_variavel + Number(r.custo_variavel ?? 0),
       capex: acc.capex + Number(r.capex ?? 0),
+      crescimento: acc.crescimento + Number(r.crescimento ?? 0),
+      total_socios: acc.total_socios + Number(r.total_socios ?? 0),
       distribuicao_pablo: acc.distribuicao_pablo + Number(r.distribuicao_pablo ?? 0),
       distribuicao_sandoval: acc.distribuicao_sandoval + Number(r.distribuicao_sandoval ?? 0),
       geracao_caixa: acc.geracao_caixa + Number(r.geracao_caixa ?? 0),
     }),
     {
       receita_bruta: 0, despesa_total: 0, resultado: 0, custo_fixo: 0,
-      custo_variavel: 0, capex: 0, distribuicao_pablo: 0, distribuicao_sandoval: 0, geracao_caixa: 0,
+      custo_variavel: 0, capex: 0, crescimento: 0, total_socios: 0,
+      distribuicao_pablo: 0, distribuicao_sandoval: 0, geracao_caixa: 0,
     },
   );
 
@@ -134,8 +207,27 @@ function Relatorios() {
                 <table className="w-full text-sm">
                   <thead className="text-xs text-muted-foreground">
                     <tr className="border-b border-border">
-                      {["Mês", "Receita Bruta", "Despesa Total", "Resultado", "Custo Fixo", "Custo Variável", "CAPEX", "Crescimento", "Dist. Pablo", "Dist. Sandoval", "Geração de Caixa"].map((h, i) => (
-                        <th key={h} className={`px-3 py-2 font-medium ${i === 0 ? "text-left" : "text-right"}`}>{h}</th>
+                      <th className="px-3 py-2 text-left font-medium">Mês</th>
+                      {mensalOrder.map((key) => (
+                        <th
+                          key={key}
+                          draggable
+                          onDragStart={() => setDragCol(key)}
+                          onDragOver={(e) => { e.preventDefault(); setDropCol(key); }}
+                          onDragLeave={() => setDropCol((c) => (c === key ? null : c))}
+                          onDrop={() => reorderMensal(key)}
+                          onDragEnd={() => { setDragCol(null); setDropCol(null); }}
+                          className={cn(
+                            "group relative cursor-grab px-3 py-2 text-right font-medium active:cursor-grabbing",
+                            dragCol === key && "opacity-50",
+                            dropCol === key && dragCol && dropCol !== dragCol && "border-l-2 border-primary",
+                          )}
+                        >
+                          <span className="inline-flex items-center gap-1">
+                            <GripVertical className="size-3 opacity-0 transition-opacity group-hover:opacity-60" />
+                            {MENSAL_MAP[key].label}
+                          </span>
+                        </th>
                       ))}
                     </tr>
                   </thead>
@@ -143,30 +235,28 @@ function Relatorios() {
                     {linhas.map((r, i) => (
                       <tr key={r.mes} className={i % 2 ? "bg-secondary/25" : undefined}>
                         <td className="px-3 py-2">{formatMonthKey(r.mes)}</td>
-                        <td className="px-3 py-2 text-right tabular">{formatMoney(r.receita_bruta)}</td>
-                        <td className="px-3 py-2 text-right tabular">{formatMoney(r.despesa_total)}</td>
-                        <td className="px-3 py-2 text-right"><Money value={r.resultado} colored /></td>
-                        <td className="px-3 py-2 text-right tabular">{formatMoney(r.custo_fixo)}</td>
-                        <td className="px-3 py-2 text-right tabular">{formatMoney(r.custo_variavel)}</td>
-                        <td className="px-3 py-2 text-right tabular">{formatMoney(r.capex)}</td>
-                        <td className="px-3 py-2 text-right tabular">{formatPercent(r.crescimento)}</td>
-                        <td className="px-3 py-2 text-right tabular">{formatMoney(r.distribuicao_pablo)}</td>
-                        <td className="px-3 py-2 text-right tabular">{formatMoney(r.distribuicao_sandoval)}</td>
-                        <td className="px-3 py-2 text-right"><Money value={r.geracao_caixa} colored /></td>
+                        {mensalOrder.map((key) => (
+                          <td key={key} className="px-3 py-2 text-right tabular">
+                            {MENSAL_MAP[key].colored ? (
+                              <Money value={r[key as keyof ResumoMensal] as number} colored />
+                            ) : (
+                              formatMoney(r[key as keyof ResumoMensal] as number)
+                            )}
+                          </td>
+                        ))}
                       </tr>
                     ))}
                     <tr className="border-t border-border font-semibold">
                       <td className="px-3 py-2">Total</td>
-                      <td className="px-3 py-2 text-right tabular">{formatMoney(totais.receita_bruta)}</td>
-                      <td className="px-3 py-2 text-right tabular">{formatMoney(totais.despesa_total)}</td>
-                      <td className="px-3 py-2 text-right"><Money value={totais.resultado} colored /></td>
-                      <td className="px-3 py-2 text-right tabular">{formatMoney(totais.custo_fixo)}</td>
-                      <td className="px-3 py-2 text-right tabular">{formatMoney(totais.custo_variavel)}</td>
-                      <td className="px-3 py-2 text-right tabular">{formatMoney(totais.capex)}</td>
-                      <td className="px-3 py-2 text-right">—</td>
-                      <td className="px-3 py-2 text-right tabular">{formatMoney(totais.distribuicao_pablo)}</td>
-                      <td className="px-3 py-2 text-right tabular">{formatMoney(totais.distribuicao_sandoval)}</td>
-                      <td className="px-3 py-2 text-right"><Money value={totais.geracao_caixa} colored /></td>
+                      {mensalOrder.map((key) => (
+                        <td key={key} className="px-3 py-2 text-right tabular">
+                          {MENSAL_MAP[key].colored ? (
+                            <Money value={totais[key]} colored />
+                          ) : (
+                            formatMoney(totais[key])
+                          )}
+                        </td>
+                      ))}
                     </tr>
                   </tbody>
                 </table>
