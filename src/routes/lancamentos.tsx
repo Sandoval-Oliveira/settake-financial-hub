@@ -1,10 +1,25 @@
-import { useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { createFileRoute } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { ArrowDown, ArrowLeftRight, ArrowUp, ArrowUpDown, Copy, Pencil, Square, CheckSquare2, Trash2 } from "lucide-react";
+import {
+  ArrowDown,
+  ArrowLeftRight,
+  ArrowUp,
+  ArrowUpDown,
+  CheckSquare2,
+  Columns3,
+  Copy,
+  GripVertical,
+  Pencil,
+  Square,
+  Trash2,
+} from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import {
   Select,
   SelectContent,
@@ -21,6 +36,7 @@ import {
   STATUSES,
   TIPOS,
   type Transacao,
+  type TransacaoCompleta,
 } from "@/lib/finance";
 import type { TipoTransacao } from "@/lib/finance";
 import { cn } from "@/lib/utils";
@@ -42,6 +58,7 @@ export const Route = createFileRoute("/lancamentos")({
 });
 
 const PAGE_SIZE = 20;
+const PREFS_KEY = "settake:lancamentos:columns";
 
 const COLUMNS = [
   { key: "vencimento", label: "Vencimento", width: 110 },
@@ -54,10 +71,49 @@ const COLUMNS = [
   { key: "pessoa", label: "Pessoa", width: 140 },
   { key: "valor", label: "Valor", width: 110 },
   { key: "status", label: "Status", width: 100 },
-  { key: "conciliada", label: "Conc.", width: 60 },
-  { key: "temp", label: "Temp.", width: 70 },
-  { key: "acoes", label: "Ações", width: 70 },
+  { key: "conciliada", label: "Conciliada", width: 90 },
+  { key: "temp", label: "Temperatura", width: 100 },
+  { key: "acoes", label: "Ações", width: 90 },
 ] as const;
+
+type ColKey = (typeof COLUMNS)[number]["key"];
+
+const DEFAULT_ORDER = COLUMNS.map((c) => c.key) as ColKey[];
+const COL_MAP = Object.fromEntries(COLUMNS.map((c) => [c.key, c])) as Record<
+  ColKey,
+  (typeof COLUMNS)[number]
+>;
+const RIGHT_ALIGNED: ColKey[] = ["valor", "acoes"];
+
+function useColumnPrefs() {
+  const [order, setOrder] = useState<ColKey[]>(DEFAULT_ORDER);
+  const [hidden, setHidden] = useState<ColKey[]>([]);
+
+  useEffect(() => {
+    try {
+      const raw = localStorage.getItem(PREFS_KEY);
+      if (!raw) return;
+      const parsed = JSON.parse(raw) as { order?: ColKey[]; hidden?: ColKey[] };
+      const valid = (parsed.order ?? []).filter((k) => DEFAULT_ORDER.includes(k));
+      const merged = [...valid, ...DEFAULT_ORDER.filter((k) => !valid.includes(k))];
+      // "acoes" is always last and never hidden
+      setOrder([...merged.filter((k) => k !== "acoes"), "acoes"]);
+      setHidden((parsed.hidden ?? []).filter((k) => DEFAULT_ORDER.includes(k) && k !== "acoes" && k !== "nome"));
+    } catch {
+      /* ignore */
+    }
+  }, []);
+
+  useEffect(() => {
+    try {
+      localStorage.setItem(PREFS_KEY, JSON.stringify({ order, hidden }));
+    } catch {
+      /* ignore */
+    }
+  }, [order, hidden]);
+
+  return { order, setOrder, hidden, setHidden };
+}
 
 function useColumnWidths() {
   const [widths, setWidths] = useState<Record<string, number>>(() =>
@@ -96,6 +152,95 @@ function lastDayOfMonth() {
   return isoDate(new Date(d.getFullYear(), d.getMonth() + 1, 0));
 }
 
+function ColumnManager({
+  order,
+  setOrder,
+  hidden,
+  setHidden,
+}: {
+  order: ColKey[];
+  setOrder: (o: ColKey[]) => void;
+  hidden: ColKey[];
+  setHidden: (h: ColKey[]) => void;
+}) {
+  const [dragKey, setDragKey] = useState<ColKey | null>(null);
+
+  function onDrop(target: ColKey) {
+    if (!dragKey || dragKey === target || target === "acoes") return;
+    const next = order.filter((k) => k !== dragKey);
+    const idx = next.indexOf(target);
+    next.splice(idx, 0, dragKey);
+    setOrder([...next.filter((k) => k !== "acoes"), "acoes"]);
+    setDragKey(null);
+  }
+
+  return (
+    <Popover>
+      <TooltipProvider>
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <PopoverTrigger asChild>
+              <Button variant="outline" size="icon" aria-label="Configurar colunas">
+                <Columns3 className="size-4" />
+              </Button>
+            </PopoverTrigger>
+          </TooltipTrigger>
+          <TooltipContent>Configurar colunas</TooltipContent>
+        </Tooltip>
+      </TooltipProvider>
+      <PopoverContent align="end" className="w-64 border-border bg-card p-3">
+        <p className="mb-2 text-[11px] uppercase tracking-wide text-muted-foreground">Colunas visíveis</p>
+        <div className="max-h-80 space-y-0.5 overflow-y-auto">
+          {order.map((key) => {
+            const col = COL_MAP[key];
+            const locked = key === "acoes";
+            const lockedVisibility = locked || key === "nome";
+            return (
+              <div
+                key={key}
+                draggable={!locked}
+                onDragStart={() => !locked && setDragKey(key)}
+                onDragOver={(e) => e.preventDefault()}
+                onDrop={() => onDrop(key)}
+                className={cn(
+                  "flex items-center gap-2 rounded-md px-1 py-1.5 text-sm",
+                  locked ? "text-muted-foreground" : "hover:bg-secondary/50",
+                  dragKey === key && "opacity-50",
+                )}
+              >
+                {locked ? (
+                  <span className="size-4" />
+                ) : (
+                  <GripVertical className="size-4 cursor-grab text-muted-foreground active:cursor-grabbing" />
+                )}
+                <Checkbox
+                  checked={!hidden.includes(key)}
+                  disabled={lockedVisibility}
+                  onCheckedChange={(v) =>
+                    setHidden(v ? hidden.filter((k) => k !== key) : [...hidden, key])
+                  }
+                />
+                <span className="truncate">{col.label}</span>
+              </div>
+            );
+          })}
+        </div>
+        <Button
+          variant="outline"
+          size="sm"
+          className="mt-3 w-full"
+          onClick={() => {
+            setOrder(DEFAULT_ORDER);
+            setHidden([]);
+          }}
+        >
+          Restaurar padrão
+        </Button>
+      </PopoverContent>
+    </Popover>
+  );
+}
+
 function Lancamentos() {
   const queryClient = useQueryClient();
   const lista = useQuery(transacoesCompletasQuery);
@@ -108,6 +253,7 @@ function Lancamentos() {
   const [de, setDe] = useState(firstDayOfMonth());
   const [ate, setAte] = useState(lastDayOfMonth());
   const [conta, setConta] = useState("Todas");
+  const [somenteNaoConciliadas, setSomenteNaoConciliadas] = useState(false);
   const [asc, setAsc] = useState(false);
   const [page, setPage] = useState(1);
   const [drawerOpen, setDrawerOpen] = useState(false);
@@ -115,6 +261,12 @@ function Lancamentos() {
   const [drawerMode, setDrawerMode] = useState<"edit" | "duplicate">("edit");
   const [lockedTipo, setLockedTipo] = useState<TipoTransacao | undefined>(undefined);
   const { widths, onMouseDown } = useColumnWidths();
+  const { order, setOrder, hidden, setHidden } = useColumnPrefs();
+
+  const visibleColumns = useMemo(
+    () => order.filter((k) => !hidden.includes(k)).map((k) => COL_MAP[k]),
+    [order, hidden],
+  );
 
   const rows = useMemo(() => {
     const data = (lista.data ?? []).filter((t) => {
@@ -122,6 +274,7 @@ function Lancamentos() {
       if (status !== "Todos" && t.status !== status) return false;
       if (busca && !t.nome.toLowerCase().includes(busca.toLowerCase())) return false;
       if (conta !== "Todas" && t.conta_origem !== conta) return false;
+      if (somenteNaoConciliadas && t.conciliada) return false;
       const v = (t.vencimento ?? "").slice(0, 10);
       if (de && v < de) return false;
       if (ate && v > ate) return false;
@@ -130,7 +283,7 @@ function Lancamentos() {
     return data.sort((a, b) =>
       asc ? a.vencimento.localeCompare(b.vencimento) : b.vencimento.localeCompare(a.vencimento),
     );
-  }, [lista.data, tipo, status, busca, conta, de, ate, asc]);
+  }, [lista.data, tipo, status, busca, conta, somenteNaoConciliadas, de, ate, asc]);
 
   const totalPages = Math.max(1, Math.ceil(rows.length / PAGE_SIZE));
   const currentPage = Math.min(page, totalPages);
@@ -186,7 +339,82 @@ function Lancamentos() {
     setDe(firstDayOfMonth());
     setAte(lastDayOfMonth());
     setConta("Todas");
+    setSomenteNaoConciliadas(false);
     setPage(1);
+  }
+
+  function renderCell(t: TransacaoCompleta, key: ColKey) {
+    switch (key) {
+      case "vencimento":
+        return <span className="truncate whitespace-nowrap">{formatDate(t.vencimento)}</span>;
+      case "nome":
+        return <span className="block truncate">{t.nome}</span>;
+      case "tipo":
+        return <TipoBadge tipo={t.tipo} />;
+      case "natureza":
+        return <span className="block truncate text-muted-foreground">{t.natureza ?? "—"}</span>;
+      case "grupo":
+        return <span className="block truncate text-muted-foreground">{t.grupo ?? "—"}</span>;
+      case "item":
+        return <span className="block truncate text-muted-foreground">{t.item ?? "—"}</span>;
+      case "conta":
+        return <span className="block truncate text-muted-foreground">{t.conta_origem ?? "—"}</span>;
+      case "pessoa":
+        return <span className="block truncate text-muted-foreground">{t.pessoa ?? "—"}</span>;
+      case "valor":
+        return <Money value={t.valor} colored negative={t.tipo === "Despesa"} />;
+      case "status":
+        return <StatusBadge status={t.status} />;
+      case "conciliada":
+        return (
+          <button
+            aria-label={t.conciliada ? "Marcar como não conciliado" : "Marcar como conciliado"}
+            className={cn(
+              "transition-colors",
+              t.conciliada ? "text-success" : "text-muted-foreground hover:text-success",
+            )}
+            onClick={(e) => {
+              e.stopPropagation();
+              toggleConciliada.mutate({ id: t.id, conciliada: t.conciliada });
+            }}
+          >
+            {t.conciliada ? <CheckSquare2 className="size-5" /> : <Square className="size-5" />}
+          </button>
+        );
+      case "temp":
+        return <Temperatura value={t.temperatura} />;
+      case "acoes":
+        return (
+          <span className="whitespace-nowrap">
+            <button
+              aria-label="Editar"
+              className="mr-2 text-muted-foreground hover:text-primary"
+              onClick={(e) => { e.stopPropagation(); openEdit(t.id); }}
+            >
+              <Pencil className="size-4" />
+            </button>
+            <button
+              aria-label="Duplicar"
+              className="mr-2 text-muted-foreground hover:text-primary"
+              onClick={(e) => { e.stopPropagation(); openDuplicate(t.id); }}
+            >
+              <Copy className="size-4" />
+            </button>
+            <button
+              aria-label="Excluir"
+              className="text-muted-foreground hover:text-destructive"
+              onClick={(e) => {
+                e.stopPropagation();
+                if (confirm(`Excluir "${t.nome}"?`)) remove.mutate(t.id);
+              }}
+            >
+              <Trash2 className="size-4" />
+            </button>
+          </span>
+        );
+      default:
+        return null;
+    }
   }
 
   return (
@@ -245,6 +473,23 @@ function Lancamentos() {
             {(contas.data ?? []).map((c) => <SelectItem key={c.id} value={c.nome}>{c.nome}</SelectItem>)}
           </SelectContent>
         </Select>
+
+        <button
+          type="button"
+          aria-pressed={somenteNaoConciliadas}
+          onClick={() => { setSomenteNaoConciliadas((v) => !v); setPage(1); }}
+          className={cn(
+            "flex h-9 items-center gap-2 rounded-full border px-3 text-sm transition-colors",
+            somenteNaoConciliadas
+              ? "border-primary bg-primary/10 text-primary"
+              : "border-[#3A3D50] bg-[#2A2D3E] text-[#8B8FA8] hover:text-foreground",
+          )}
+        >
+          {somenteNaoConciliadas ? <CheckSquare2 className="size-4" /> : <Square className="size-4" />}
+          Não conciliadas
+        </button>
+
+        <ColumnManager order={order} setOrder={setOrder} hidden={hidden} setHidden={setHidden} />
         <Button variant="outline" onClick={limpar}>Limpar filtros</Button>
       </div>
 
@@ -257,17 +502,17 @@ function Lancamentos() {
           <div className="overflow-x-auto">
             <table className="w-full table-fixed text-sm">
               <colgroup>
-                {COLUMNS.map((c) => (
+                {visibleColumns.map((c) => (
                   <col key={c.key} style={{ width: widths[c.key] }} />
                 ))}
               </colgroup>
               <thead className="text-xs text-muted-foreground">
                 <tr className="border-b border-border">
-                  {COLUMNS.map((c) => (
+                  {visibleColumns.map((c) => (
                     <th
                       key={c.key}
                       className={`group relative px-3 py-2 font-medium ${
-                        c.key === "valor" || c.key === "acoes" ? "text-right" : "text-left"
+                        RIGHT_ALIGNED.includes(c.key) ? "text-right" : "text-left"
                       }`}
                     >
                       {c.key === "vencimento" ? (
@@ -293,60 +538,17 @@ function Lancamentos() {
                     onClick={() => openEdit(t.id)}
                     className={`cursor-pointer hover:bg-surface-hover ${i % 2 ? "bg-secondary/25" : ""}`}
                   >
-                    <td className="px-3 py-2 truncate whitespace-nowrap">{formatDate(t.vencimento)}</td>
-                    <td className="px-3 py-2 truncate">{t.nome}</td>
-                    <td className="px-3 py-2"><TipoBadge tipo={t.tipo} /></td>
-                    <td className="px-3 py-2 truncate text-muted-foreground">{t.natureza ?? "—"}</td>
-                    <td className="px-3 py-2 truncate text-muted-foreground">{t.grupo ?? "—"}</td>
-                    <td className="px-3 py-2 truncate text-muted-foreground">{t.item ?? "—"}</td>
-                    <td className="px-3 py-2 truncate text-muted-foreground">{t.conta_origem ?? "—"}</td>
-                    <td className="px-3 py-2 truncate text-muted-foreground">{t.pessoa ?? "—"}</td>
-                    <td className="px-3 py-2 text-right">
-                      <Money value={t.valor} colored negative={t.tipo === "Despesa"} />
-                    </td>
-                    <td className="px-3 py-2"><StatusBadge status={t.status} /></td>
-                    <td className="px-3 py-2">
-                      <button
-                        aria-label={t.conciliada ? "Marcar como não conciliado" : "Marcar como conciliado"}
+                    {visibleColumns.map((c) => (
+                      <td
+                        key={c.key}
                         className={cn(
-                          "transition-colors",
-                          t.conciliada ? "text-success" : "text-muted-foreground hover:text-success",
+                          "px-3 py-2",
+                          RIGHT_ALIGNED.includes(c.key) ? "text-right" : undefined,
                         )}
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          toggleConciliada.mutate({ id: t.id, conciliada: t.conciliada });
-                        }}
                       >
-                        {t.conciliada ? <CheckSquare2 className="size-5" /> : <Square className="size-5" />}
-                      </button>
-                    </td>
-                    <td className="px-3 py-2"><Temperatura value={t.temperatura} /></td>
-                    <td className="px-3 py-2 text-right whitespace-nowrap">
-                      <button
-                        aria-label="Editar"
-                        className="mr-2 text-muted-foreground hover:text-primary"
-                        onClick={(e) => { e.stopPropagation(); openEdit(t.id); }}
-                      >
-                        <Pencil className="size-4" />
-                      </button>
-                      <button
-                        aria-label="Duplicar"
-                        className="mr-2 text-muted-foreground hover:text-primary"
-                        onClick={(e) => { e.stopPropagation(); openDuplicate(t.id); }}
-                      >
-                        <Copy className="size-4" />
-                      </button>
-                      <button
-                        aria-label="Excluir"
-                        className="text-muted-foreground hover:text-destructive"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          if (confirm(`Excluir "${t.nome}"?`)) remove.mutate(t.id);
-                        }}
-                      >
-                        <Trash2 className="size-4" />
-                      </button>
-                    </td>
+                        {renderCell(t, c.key)}
+                      </td>
+                    ))}
                   </tr>
                 ))}
               </tbody>
