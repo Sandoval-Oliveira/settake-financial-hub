@@ -21,6 +21,7 @@ import {
   dashboardMesQuery,
   dashboardSerieQuery,
   metaQuery,
+  receitaPorServicoQuery,
   upsertMeta,
   type DashboardFinanceiro,
 } from "@/lib/finance";
@@ -30,6 +31,8 @@ import {
   BotaoEditarMetas,
   CardCascata,
   CascataDetalhada,
+  CollapsibleSection,
+  ComposicaoReceitaChart,
   Gauge,
   MetasDialog,
   TooltipCustom,
@@ -92,6 +95,7 @@ function Dashboard() {
   const mes = useQuery(dashboardMesQuery(periodo));
   const serie = useQuery(dashboardSerieQuery);
   const meta = useQuery(metaQuery(ano, mesNum));
+  const receitaServicos = useQuery(receitaPorServicoQuery);
 
   const salvarMeta = useMutation({
     mutationFn: (v: { meta_faturamento: number; meta_despesas: number; meta_lucro: number }) =>
