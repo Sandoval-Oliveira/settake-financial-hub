@@ -1,336 +1,296 @@
+import { useState } from "react";
 import { createFileRoute } from "@tanstack/react-router";
-import { useQuery } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   Area,
-  AreaChart,
   Bar,
   BarChart,
   CartesianGrid,
   ComposedChart,
   Legend,
   Line,
+  LineChart,
   ResponsiveContainer,
   Tooltip,
   XAxis,
   YAxis,
 } from "recharts";
-import { AlertTriangle, CalendarClock } from "lucide-react";
+import { ChevronLeft, ChevronRight, Target } from "lucide-react";
+import { toast } from "sonner";
 import {
-  calendarioQuery,
-  receitaPorServicoQuery,
-  resumoMensalQuery,
-  saldoContasQuery,
-  type CalendarioItem,
+  dashboardMesQuery,
+  dashboardSerieQuery,
+  metaQuery,
+  upsertMeta,
+  type DashboardFinanceiro,
 } from "@/lib/finance";
-import { formatDate, formatMonthKey, formatMoney, monthKey } from "@/lib/format";
-import { EmptyState, Money, PageHeader, SectionCard, TableSkeleton } from "@/components/finance/ui-bits";
-import { StatusBadge, TipoBadge } from "@/components/finance/badges";
+import { Button } from "@/components/ui/button";
+import { EmptyState, PageHeader, SectionCard } from "@/components/finance/ui-bits";
+import {
+  BotaoEditarMetas,
+  CardCascata,
+  CascataDetalhada,
+  Gauge,
+  MetasDialog,
+  TooltipCustom,
+  formatK,
+} from "@/components/finance/dashboard-parts";
 
 export const Route = createFileRoute("/")({
   head: () => ({
     meta: [
-      { title: "Dashboard — SetTake Finance" },
-      { name: "description", content: "Saldos das contas, resultado mensal e vencimentos do ERP financeiro SetTake." },
-      { property: "og:title", content: "Dashboard — SetTake Finance" },
-      { property: "og:description", content: "Saldos, resultado mensal e vencimentos em um só painel." },
+      { title: "Dashboard Financeiro — SetTake Finance" },
+      {
+        name: "description",
+        content: "Cascata financeira mensal, metas, margens e evolução de resultados da SetTake.",
+      },
+      { property: "og:title", content: "Dashboard Financeiro — SetTake Finance" },
+      { property: "og:description", content: "Cascata financeira, metas e margens em um só painel." },
+      { property: "og:type", content: "website" },
+      { name: "twitter:card", content: "summary_large_image" },
     ],
   }),
   component: Dashboard,
 });
 
-const chartTooltip = {
-  contentStyle: {
-    background: "#1A1D27",
-    border: "1px solid #2A2D3E",
-    borderRadius: 12,
-    color: "#F0F2F8",
-    fontSize: 12,
-  },
-  formatter: (value: number | string) => formatMoney(Number(value)),
-};
-
-const MESES_ABREV = ["Jan", "Fev", "Mar", "Abr", "Mai", "Jun", "Jul", "Ago", "Set", "Out", "Nov", "Dez"];
-
-function AreaAnual({
-  title,
-  subtitle,
-  data,
-  dataKey,
-  label,
-  color,
-  gradientId,
-  total,
-  loading,
-}: {
-  title: string;
-  subtitle: string;
-  data: { mes: string; valor: number }[];
-  dataKey: string;
-  label: string;
-  color: string;
-  gradientId: string;
-  total: number;
-  loading: boolean;
-}) {
-  return (
-    <SectionCard
-      title={title}
-      description={subtitle}
-      action={
-        <span
-          className="rounded-full border px-3 py-1 text-xs font-medium tabular"
-          style={{ borderColor: `${color}66`, background: `${color}1A`, color }}
-        >
-          {formatMoney(total)}
-        </span>
-      }
-    >
-      <div className="h-72 p-3">
-        {loading ? (
-          <TableSkeleton rows={4} cols={3} />
-        ) : data.length ? (
-          <ResponsiveContainer width="100%" height="100%">
-            <AreaChart data={data}>
-              <defs>
-                <linearGradient id={gradientId} x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="0%" stopColor={color} stopOpacity={0.3} />
-                  <stop offset="100%" stopColor={color} stopOpacity={0} />
-                </linearGradient>
-              </defs>
-              <CartesianGrid stroke="#2A2D3E" vertical={false} />
-              <XAxis dataKey="mes" stroke="#8B8FA8" fontSize={12} tickLine={false} axisLine={false} />
-              <YAxis
-                stroke="#8B8FA8"
-                fontSize={11}
-                tickLine={false}
-                axisLine={false}
-                width={80}
-                tickFormatter={(v: number) => formatMoney(Number(v))}
-              />
-              <Tooltip {...chartTooltip} />
-              <Area
-                type="monotone"
-                dataKey="valor"
-                name={label}
-                stroke={color}
-                strokeWidth={2.5}
-                fill={`url(#${gradientId})`}
-                dot={false}
-                activeDot={{ r: 6, fill: color, stroke: color }}
-              />
-            </AreaChart>
-          </ResponsiveContainer>
-        ) : (
-          <EmptyState message="Sem dados no ano." />
-        )}
-      </div>
-    </SectionCard>
-  );
+function periodoAtual() {
+  const d = new Date();
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
 }
 
-function VencimentosTable({
-  items,
-  loading,
-  emptyMessage,
-}: {
-  items: CalendarioItem[];
-  loading: boolean;
-  emptyMessage: string;
-}) {
-  if (loading) return <TableSkeleton rows={5} cols={4} />;
-  if (!items.length) return <EmptyState message={emptyMessage} icon={<CalendarClock className="size-8" />} />;
+function shiftPeriodo(periodo: string, delta: number) {
+  const [y, m] = periodo.split("-").map(Number);
+  const d = new Date(y, (m ?? 1) - 1 + delta, 1);
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
+}
+
+const MESES = ["Jan", "Fev", "Mar", "Abr", "Mai", "Jun", "Jul", "Ago", "Set", "Out", "Nov", "Dez"];
+
+function labelPeriodo(periodo: string) {
+  const [y, m] = periodo.split("-").map(Number);
+  return `${MESES[(m ?? 1) - 1]} ${y}`;
+}
+
+function CardsSkeleton({ n = 8, h = "h-28" }: { n?: number; h?: string }) {
   return (
-    <div className="overflow-x-auto">
-      <table className="w-full text-sm">
-        <thead className="text-xs text-muted-foreground">
-          <tr className="border-b border-border">
-            <th className="px-4 py-2 text-left font-medium">Data</th>
-            <th className="px-4 py-2 text-left font-medium">Nome</th>
-            <th className="px-4 py-2 text-left font-medium">Tipo</th>
-            <th className="px-4 py-2 text-right font-medium">Valor</th>
-            <th className="px-4 py-2 text-left font-medium">Status</th>
-            <th className="px-4 py-2 text-left font-medium">Conta</th>
-            <th className="px-4 py-2 text-left font-medium">Pessoa</th>
-          </tr>
-        </thead>
-        <tbody>
-          {items.map((row, i) => (
-            <tr key={row.id} className={i % 2 ? "bg-secondary/25" : undefined}>
-              <td className="px-4 py-2 whitespace-nowrap">{formatDate(row.vencimento)}</td>
-              <td className="px-4 py-2">{row.nome}</td>
-              <td className="px-4 py-2"><TipoBadge tipo={row.tipo} /></td>
-              <td className="px-4 py-2 text-right">
-                <Money value={row.valor} colored negative={row.tipo === "Despesa"} />
-              </td>
-              <td className="px-4 py-2"><StatusBadge status={row.status} /></td>
-              <td className="px-4 py-2 text-muted-foreground">{row.conta_origem ?? "—"}</td>
-              <td className="px-4 py-2 text-muted-foreground">{row.pessoa ?? "—"}</td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
-    </div>
+    <>
+      {Array.from({ length: n }).map((_, i) => (
+        <div key={i} className={`${h} animate-pulse rounded-xl border border-border bg-card`} />
+      ))}
+    </>
   );
 }
 
 function Dashboard() {
-  const saldos = useQuery(saldoContasQuery);
-  const resumo = useQuery(resumoMensalQuery);
-  const servicos = useQuery(receitaPorServicoQuery);
-  const calendario = useQuery(calendarioQuery);
+  const [periodo, setPeriodo] = useState(periodoAtual);
+  const [metasOpen, setMetasOpen] = useState(false);
+  const qc = useQueryClient();
 
-  const mesAtual = monthKey(new Date());
-  const resumoMes = (resumo.data ?? []).find((r) => r.mes === mesAtual) ?? (resumo.data ?? []).at(-1);
-  const ultimos6 = (resumo.data ?? []).slice(-6).map((r) => ({
-    mes: formatMonthKey(r.mes),
-    receita: Number(r.receita_bruta ?? 0),
-    despesa: Number(r.despesa_total ?? 0),
-    resultado: Number(r.resultado ?? 0),
-  }));
+  const [ano, mesNum] = periodo.split("-").map(Number);
+  const mes = useQuery(dashboardMesQuery(periodo));
+  const serie = useQuery(dashboardSerieQuery);
+  const meta = useQuery(metaQuery(ano, mesNum));
 
-  const servicosMes = (servicos.data ?? [])
-    .filter((s) => s.mes === mesAtual)
-    .slice(0, 6)
-    .map((s) => ({ servico: s.servico, receita: Number(s.receita_total ?? 0) }));
+  const salvarMeta = useMutation({
+    mutationFn: (v: { meta_faturamento: number; meta_despesas: number; meta_lucro: number }) =>
+      upsertMeta({ ano, mes: mesNum, ...v }),
+    onSuccess: () => {
+      toast.success("Metas salvas");
+      setMetasOpen(false);
+      qc.invalidateQueries({ queryKey: ["metas_financeiras"] });
+      qc.invalidateQueries({ queryKey: ["dashboard_financeiro_graficos"] });
+    },
+    onError: (e: Error) => toast.error(e.message),
+  });
 
-  const cal = calendario.data ?? [];
-  const proximos = cal.filter((c) => !c.atrasado).slice(0, 7);
-  const atrasados = cal.filter((c) => c.atrasado).slice(0, 7);
-
-  const anoAtual = new Date().getFullYear();
-  const doAno = (resumo.data ?? []).filter((r) => (r.mes ?? "").startsWith(String(anoAtual)));
-  const serieReceita = doAno.map((r) => ({
-    mes: MESES_ABREV[Number((r.mes ?? "").slice(5, 7)) - 1] ?? formatMonthKey(r.mes),
-    valor: Number(r.receita_bruta ?? 0),
-  }));
-  const serieCaixa = doAno.map((r) => ({
-    mes: MESES_ABREV[Number((r.mes ?? "").slice(5, 7)) - 1] ?? formatMonthKey(r.mes),
-    valor: Number(r.geracao_caixa ?? 0),
-  }));
-  const totalReceita = serieReceita.reduce((s, r) => s + r.valor, 0);
-  const totalCaixa = serieCaixa.reduce((s, r) => s + r.valor, 0);
+  const d = mes.data as DashboardFinanceiro | null | undefined;
+  const dados = serie.data ?? [];
+  const temMeta = !!meta.data;
 
   return (
     <div>
-      <PageHeader title="Dashboard" subtitle="Visão geral financeira da SetTake" />
+      <PageHeader
+        title="Dashboard Financeiro"
+        subtitle="Cascata de resultados, metas e margens"
+        actions={
+          <div className="flex flex-wrap items-center gap-2">
+            <div className="flex items-center gap-1 rounded-lg border border-border bg-card px-1 py-1">
+              <Button variant="ghost" size="icon" onClick={() => setPeriodo((p) => shiftPeriodo(p, -1))} aria-label="Mês anterior">
+                <ChevronLeft className="size-4" />
+              </Button>
+              <span className="min-w-24 text-center text-sm font-medium tabular">{labelPeriodo(periodo)}</span>
+              <Button variant="ghost" size="icon" onClick={() => setPeriodo((p) => shiftPeriodo(p, 1))} aria-label="Próximo mês">
+                <ChevronRight className="size-4" />
+              </Button>
+            </div>
+            <Button variant="outline" size="sm" onClick={() => setPeriodo(periodoAtual())}>
+              Este mês
+            </Button>
+            <Button variant="outline" size="sm" onClick={() => setPeriodo(shiftPeriodo(periodoAtual(), -1))}>
+              Mês anterior
+            </Button>
+            <input
+              type="month"
+              value={periodo}
+              onChange={(e) => e.target.value && setPeriodo(e.target.value)}
+              className="rounded-lg border border-border bg-card px-3 py-1.5 text-sm text-foreground"
+              aria-label="Período personalizado"
+            />
+          </div>
+        }
+      />
 
+      {/* Bloco 1 — cards da cascata */}
       <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-        {saldos.isLoading
-          ? Array.from({ length: 4 }).map((_, i) => (
-              <div key={i} className="h-28 animate-pulse rounded-xl border border-border bg-card" />
-            ))
-          : (saldos.data ?? []).map((conta) => (
-              <div key={conta.id} className="rounded-xl border border-border bg-card p-4">
-                <p className="text-xs text-muted-foreground">{conta.conta}</p>
-                <p className="mt-2 text-2xl font-semibold">
-                  <Money value={conta.saldo_atual} colored />
-                </p>
-                <p className="mt-1 text-xs text-muted-foreground tabular">
-                  Saldo inicial {formatMoney(conta.saldo_inicial)}
-                </p>
-              </div>
-            ))}
-        {!saldos.isLoading && !(saldos.data ?? []).length && (
+        {mes.isLoading ? (
+          <CardsSkeleton />
+        ) : d ? (
+          <>
+            <CardCascata titulo="Faturamento Bruto" valor={d.faturamento_bruto} varPct={d.fat_bruto_var_pct} participacaoPct={100} />
+            <CardCascata titulo="Lucro Bruto" valor={d.lucro_bruto} varPct={d.lucro_bruto_var_pct} participacaoPct={d.lucro_bruto_pct} />
+            <CardCascata titulo="Margem Contribuição" valor={d.margem_contribuicao} varPct={d.margem_var_pct} participacaoPct={d.margem_contribuicao_pct} />
+            <CardCascata titulo="EBITDA" valor={d.ebitda} varPct={d.ebitda_var_pct} participacaoPct={d.ebitda_pct} />
+            <CardCascata titulo="Geração de Caixa" valor={d.resultado_antes_socios} varPct={d.geracao_caixa_var_pct} participacaoPct={d.geracao_caixa_pct} />
+            <CardCascata titulo="Lucro Líquido" valor={d.lucro_liquido} varPct={d.lucro_liquido_var_pct} participacaoPct={d.lucro_liquido_pct} />
+            <CardCascata titulo="Total Despesas" valor={d.total_despesas} varPct={null} participacaoPct={d.total_despesas_pct} despesa />
+            <CardCascata titulo="Despesas Fixas" valor={d.despesas_fixas} varPct={null} participacaoPct={d.despesas_fixas_pct} despesa />
+          </>
+        ) : (
           <div className="sm:col-span-2 xl:col-span-4">
             <SectionCard>
-              <EmptyState message="Nenhuma conta bancária cadastrada ainda." />
+              <EmptyState message={`Sem dados financeiros para ${labelPeriodo(periodo)}.`} />
             </SectionCard>
           </div>
         )}
       </div>
 
-      <div className="mt-4 grid gap-4 xl:grid-cols-2">
-        <AreaAnual
-          title="Receita no Ano"
-          subtitle={String(anoAtual)}
-          data={serieReceita}
-          dataKey="valor"
-          label="Receita Bruta"
-          color="#22C55E"
-          gradientId="gradReceita"
-          total={totalReceita}
-          loading={resumo.isLoading}
-        />
-        <AreaAnual
-          title="Geração de Caixa"
-          subtitle="Resultado antes das retiradas dos sócios"
-          data={serieCaixa}
-          dataKey="valor"
-          label="Geração de Caixa"
-          color="#E8B800"
-          gradientId="gradCaixa"
-          total={totalCaixa}
-          loading={resumo.isLoading}
-        />
+      {/* Bloco 2 — gauges de meta */}
+      <div className="mt-4">
+        {meta.isLoading ? (
+          <div className="grid gap-4 sm:grid-cols-3">
+            <CardsSkeleton n={3} h="h-52" />
+          </div>
+        ) : temMeta && d ? (
+          <div>
+            <div className="mb-2 flex items-center justify-between">
+              <h2 className="text-sm font-semibold">Metas de {labelPeriodo(periodo)}</h2>
+              <BotaoEditarMetas onClick={() => setMetasOpen(true)} />
+            </div>
+            <div className="grid gap-4 sm:grid-cols-3">
+              <Gauge titulo="Meta Faturamento" atual={d.faturamento_bruto} meta={meta.data!.meta_faturamento} onClick={() => setMetasOpen(true)} />
+              <Gauge titulo="Meta Despesas" atual={d.total_despesas} meta={meta.data!.meta_despesas} teto onClick={() => setMetasOpen(true)} />
+              <Gauge titulo="Meta Lucro" atual={d.lucro_liquido} meta={meta.data!.meta_lucro} onClick={() => setMetasOpen(true)} />
+            </div>
+          </div>
+        ) : (
+          <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-dashed border-border bg-card px-5 py-6">
+            <div className="flex items-center gap-3">
+              <Target className="size-5 text-primary" />
+              <p className="text-sm text-muted-foreground">
+                Nenhuma meta cadastrada para {labelPeriodo(periodo)}.
+              </p>
+            </div>
+            <Button size="sm" onClick={() => setMetasOpen(true)}>
+              Definir metas do mês
+            </Button>
+          </div>
+        )}
       </div>
 
+      {/* Bloco 3 — gráficos */}
       <div className="mt-4 grid gap-4 xl:grid-cols-2">
-        <SectionCard title="Resultado Mensal" description="Últimos 6 meses">
-          <div className="h-72 p-3">
-            {resumo.isLoading ? (
-              <TableSkeleton rows={4} cols={3} />
-            ) : ultimos6.length ? (
+        <SectionCard title="Evolução de resultados" description="Últimos 13 meses">
+          <div className="h-80 p-3">
+            {serie.isLoading ? (
+              <div className="h-full animate-pulse rounded-lg bg-secondary/40" />
+            ) : dados.length ? (
               <ResponsiveContainer width="100%" height="100%">
-                <ComposedChart data={ultimos6}>
-                  <CartesianGrid stroke="#2A2D3E" vertical={false} />
-                  <XAxis dataKey="mes" stroke="#8B8FA8" fontSize={12} tickLine={false} axisLine={false} />
-                  <YAxis stroke="#8B8FA8" fontSize={11} tickLine={false} axisLine={false} width={70} />
-                  <Tooltip {...chartTooltip} />
-                  <Legend wrapperStyle={{ fontSize: 12, color: "#8B8FA8" }} />
-                  <Bar dataKey="receita" name="Receita" fill="#22C55E" radius={[4, 4, 0, 0]} />
-                  <Bar dataKey="despesa" name="Despesa" fill="#EF4444" radius={[4, 4, 0, 0]} />
-                  <Line dataKey="resultado" name="Resultado" stroke="#E8B800" strokeWidth={2} dot={false} />
+                <ComposedChart data={dados}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="#2A2D3E" vertical={false} />
+                  <XAxis dataKey="periodo_curto" stroke="#8B8FA8" tick={{ fontSize: 11 }} />
+                  <YAxis stroke="#8B8FA8" tick={{ fontSize: 11 }} width={70} tickFormatter={(v: number) => formatK(Number(v))} />
+                  <Tooltip content={<TooltipCustom />} />
+                  <Legend wrapperStyle={{ fontSize: 12 }} />
+                  <Area type="monotone" dataKey="faturamento_bruto" stroke="#2A2D3E" fill="#1A1D27" strokeWidth={1} name="Faturamento Bruto" />
+                  <Area type="monotone" dataKey="ebitda" stroke="#E8B800" fill="rgba(232,184,0,0.12)" strokeWidth={2} name="EBITDA" />
+                  <Line type="monotone" dataKey="lucro_liquido" stroke="#F5820A" strokeWidth={2.5} dot={{ fill: "#F5820A", r: 3 }} activeDot={{ r: 5 }} name="Lucro Líquido" />
                 </ComposedChart>
               </ResponsiveContainer>
             ) : (
-              <EmptyState message="Sem dados mensais." />
+              <EmptyState message="Sem série histórica." />
             )}
           </div>
         </SectionCard>
 
-        <SectionCard title="Receita por Serviço" description="Top 6 no mês atual">
-          <div className="h-72 p-3">
-            {servicos.isLoading ? (
-              <TableSkeleton rows={4} cols={3} />
-            ) : servicosMes.length ? (
+        <SectionCard title="Composição das despesas" description="Últimos 13 meses">
+          <div className="h-80 p-3">
+            {serie.isLoading ? (
+              <div className="h-full animate-pulse rounded-lg bg-secondary/40" />
+            ) : dados.length ? (
               <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={servicosMes} layout="vertical" margin={{ left: 20 }}>
-                  <defs>
-                    <linearGradient id="violet" x1="0" y1="0" x2="1" y2="0">
-                      <stop offset="0%" stopColor="#E8B800" />
-                      <stop offset="100%" stopColor="#F5820A" />
-                    </linearGradient>
-                  </defs>
-                  <CartesianGrid stroke="#2A2D3E" horizontal={false} />
-                  <XAxis type="number" stroke="#8B8FA8" fontSize={11} tickLine={false} axisLine={false} />
-                  <YAxis type="category" dataKey="servico" stroke="#8B8FA8" fontSize={11} width={120} tickLine={false} axisLine={false} />
-                  <Tooltip {...chartTooltip} />
-                  <Bar dataKey="receita" name="Receita" fill="url(#violet)" radius={[0, 6, 6, 0]} />
+                <BarChart data={dados}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="#2A2D3E" vertical={false} />
+                  <XAxis dataKey="periodo_curto" stroke="#8B8FA8" tick={{ fontSize: 11 }} />
+                  <YAxis stroke="#8B8FA8" tick={{ fontSize: 11 }} width={70} tickFormatter={(v: number) => formatK(Number(v))} />
+                  <Tooltip content={<TooltipCustom />} />
+                  <Legend wrapperStyle={{ fontSize: 12 }} />
+                  <Bar dataKey="custos_deducoes" stackId="desp" fill="#DC2626" name="Fiscal" />
+                  <Bar dataKey="despesas_variaveis" stackId="desp" fill="#F5820A" name="Variáveis" />
+                  <Bar dataKey="despesas_fixas" stackId="desp" fill="#8B8FA8" name="Fixas" />
+                  <Bar dataKey="despesas_nao_operacionais" stackId="desp" fill="#6366F1" name="Não Operac." />
+                  <Bar dataKey="socios" stackId="desp" fill="#E8B800" name="Sócios" radius={[4, 4, 0, 0]} />
                 </BarChart>
               </ResponsiveContainer>
             ) : (
-              <EmptyState message="Sem receita registrada neste mês." />
+              <EmptyState message="Sem série histórica." />
             )}
           </div>
         </SectionCard>
       </div>
 
-      <div className="mt-4 grid gap-4 xl:grid-cols-2">
-        <SectionCard title="Próximos vencimentos" description="7 primeiros a vencer">
-          <VencimentosTable items={proximos} loading={calendario.isLoading} emptyMessage="Nenhum vencimento futuro." />
-        </SectionCard>
-        <SectionCard
-          title={
-            <span className="flex items-center gap-2 text-destructive">
-              <AlertTriangle className="size-4" /> Em atraso
-            </span>
-          }
-          headerClassName="bg-destructive/10"
-        >
-          <VencimentosTable items={atrasados} loading={calendario.isLoading} emptyMessage="Nada em atraso. 🎉" />
+      {/* Bloco 4 — cascata detalhada */}
+      <div className="mt-4">
+        {mes.isLoading ? (
+          <div className="h-40 animate-pulse rounded-xl border border-border bg-card" />
+        ) : d ? (
+          <CascataDetalhada d={d} />
+        ) : null}
+      </div>
+
+      {/* Bloco 5 — margens ao longo do tempo */}
+      <div className="mt-4">
+        <SectionCard title="Evolução das margens" description="% sobre o faturamento bruto">
+          <div className="h-80 p-3">
+            {serie.isLoading ? (
+              <div className="h-full animate-pulse rounded-lg bg-secondary/40" />
+            ) : dados.length ? (
+              <ResponsiveContainer width="100%" height="100%">
+                <LineChart data={dados}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="#2A2D3E" vertical={false} />
+                  <XAxis dataKey="periodo_curto" stroke="#8B8FA8" tick={{ fontSize: 11 }} />
+                  <YAxis stroke="#8B8FA8" tick={{ fontSize: 11 }} width={50} domain={[0, 100]} tickFormatter={(v: number) => `${v}%`} />
+                  <Tooltip content={<TooltipCustom percent />} />
+                  <Legend wrapperStyle={{ fontSize: 12 }} />
+                  <Line dataKey="lucro_bruto_pct" stroke="#6B7280" name="Lucro Bruto %" strokeWidth={1.5} strokeDasharray="4 2" dot={false} />
+                  <Line dataKey="margem_contribuicao_pct" stroke="#8B8FA8" name="Margem Contrib. %" strokeWidth={1.5} dot={false} />
+                  <Line dataKey="ebitda_pct" stroke="#E8B800" name="EBITDA %" strokeWidth={2} dot={false} />
+                  <Line dataKey="lucro_liquido_pct" stroke="#F5820A" name="Lucro Líquido %" strokeWidth={2.5} dot={{ fill: "#F5820A", r: 3 }} />
+                </LineChart>
+              </ResponsiveContainer>
+            ) : (
+              <EmptyState message="Sem série histórica." />
+            )}
+          </div>
         </SectionCard>
       </div>
 
+      <MetasDialog
+        open={metasOpen}
+        onOpenChange={setMetasOpen}
+        meta={meta.data ?? null}
+        saving={salvarMeta.isPending}
+        onSave={(v) => salvarMeta.mutate(v)}
+      />
     </div>
   );
 }
