@@ -213,7 +213,7 @@ function Dashboard() {
                   <YAxis stroke="#8B8FA8" tick={{ fontSize: 11 }} width={70} tickFormatter={(v: number) => formatK(Number(v))} />
                   <Tooltip content={<TooltipCustom />} />
                   <Legend wrapperStyle={{ fontSize: 12 }} />
-                  <Area type="monotone" dataKey="faturamento_bruto" stroke="#2A2D3E" fill="#1A1D27" strokeWidth={1} name="Faturamento Bruto" />
+                  <Area type="monotone" dataKey="faturamento_bruto" stroke="#22C55E" fill="rgba(34,197,94,0.10)" strokeWidth={2} name="Faturamento Bruto" />
                   <Area type="monotone" dataKey="ebitda" stroke="#E8B800" fill="rgba(232,184,0,0.12)" strokeWidth={2} name="EBITDA" />
                   <Line type="monotone" dataKey="lucro_liquido" stroke="#F5820A" strokeWidth={2.5} dot={{ fill: "#F5820A", r: 3 }} activeDot={{ r: 5 }} name="Lucro Líquido" />
                 </ComposedChart>
