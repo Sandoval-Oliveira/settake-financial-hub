@@ -1,6 +1,19 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { ChevronDown, Pencil, TrendingDown, TrendingUp } from "lucide-react";
-import { PolarAngleAxis, RadialBar, RadialBarChart, ResponsiveContainer } from "recharts";
+import {
+  Bar,
+  BarChart,
+  CartesianGrid,
+  Legend,
+  PolarAngleAxis,
+  RadialBar,
+  RadialBarChart,
+  ResponsiveContainer,
+  Tooltip as RTooltip,
+  XAxis,
+  YAxis,
+} from "recharts";
+
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -326,5 +339,158 @@ export function CascataDetalhada({ d }: { d: DashboardFinanceiro }) {
         </div>
       )}
     </section>
+  );
+}
+
+/* --------------------- Collapsible section shell -------------------- */
+
+export function CollapsibleSection({
+  title,
+  actions,
+  storageKey,
+  children,
+}: {
+  title: string;
+  actions?: React.ReactNode;
+  storageKey: string;
+  children: React.ReactNode;
+}) {
+  const [open, setOpen] = useState(true);
+
+  useEffect(() => {
+    const saved = localStorage.getItem(storageKey);
+    if (saved != null) setOpen(saved === "1");
+  }, [storageKey]);
+
+  const toggle = () => {
+    setOpen((v) => {
+      localStorage.setItem(storageKey, v ? "0" : "1");
+      return !v;
+    });
+  };
+
+  return (
+    <section className="rounded-xl border border-border bg-card">
+      <div className="flex items-center gap-2 px-5 py-4">
+        <button type="button" onClick={toggle} className="flex flex-1 items-center gap-2 text-left">
+          <ChevronDown className={cn("size-4 transition-all duration-300 ease-out", !open && "-rotate-90")} />
+          <h2 className="text-sm font-semibold">{title}</h2>
+        </button>
+        {actions}
+      </div>
+      <div
+        className="grid transition-all duration-300 ease-out"
+        style={{ gridTemplateRows: open ? "1fr" : "0fr" }}
+      >
+        <div className="overflow-hidden">
+          <div className="px-5 pb-5">{children}</div>
+        </div>
+      </div>
+    </section>
+  );
+}
+
+/* --------------------- Composição da receita ----------------------- */
+
+const SERVICO_CORES: Record<string, string> = {
+  "Plano Full": "#22C55E",
+  "Plano Pocket": "#16A34A",
+  "Plano Full Plus": "#4ADE80",
+  "Captação/Decupagem": "#E8B800",
+  "Vídeo Institucional": "#F5820A",
+  Eventos: "#8B5CF6",
+  "Diária de Captação": "#3B82F6",
+  Outros: "#6B7280",
+};
+
+const SERVICO_ORDEM = Object.keys(SERVICO_CORES);
+
+const MESES_ABREV = ["Jan", "Fev", "Mar", "Abr", "Mai", "Jun", "Jul", "Ago", "Set", "Out", "Nov", "Dez"];
+
+function mesCurto(mes: string) {
+  const [y, m] = mes.split("-").map(Number);
+  return `${MESES_ABREV[(m ?? 1) - 1]}/${String(y ?? 0).slice(2)}`;
+}
+
+export function buildReceitaStack(rows: { mes: string; servico: string; receita_total: number }[]) {
+  const meses = Array.from(new Set(rows.map((r) => r.mes))).sort().slice(-13);
+  const mesSet = new Set(meses);
+  const byMes = new Map<string, Record<string, number>>();
+  for (const m of meses) byMes.set(m, {});
+  for (const r of rows) {
+    if (!mesSet.has(r.mes)) continue;
+    const key = SERVICO_CORES[r.servico] ? r.servico : "Outros";
+    const bucket = byMes.get(r.mes)!;
+    bucket[key] = (bucket[key] ?? 0) + Number(r.receita_total ?? 0);
+  }
+  const usados = SERVICO_ORDEM.filter((s) => meses.some((m) => (byMes.get(m)?.[s] ?? 0) > 0));
+  const data = meses.map((m) => {
+    const b = byMes.get(m)!;
+    const row: Record<string, number | string> = { periodo_curto: mesCurto(m) };
+    for (const s of usados) row[s] = b[s] ?? 0;
+    return row;
+  });
+  return { data, series: usados };
+}
+
+function TooltipReceita({
+  active,
+  payload,
+  label,
+}: {
+  active?: boolean;
+  payload?: { name?: string; value?: number; color?: string }[];
+  label?: string;
+}) {
+  if (!active || !payload?.length) return null;
+  const total = payload.reduce((s, p) => s + Number(p.value ?? 0), 0);
+  return (
+    <div className="rounded-lg border border-border bg-card px-4 py-3 text-[13px] shadow-lg">
+      <p className="mb-2 text-muted-foreground">{label}</p>
+      {payload.map((p, i) => (
+        <div key={`${p.name}-${i}`} className="mb-1 flex gap-3">
+          <span style={{ color: p.color }}>{p.name}</span>
+          <span className="ml-auto tabular text-foreground">
+            {formatBRL(Number(p.value ?? 0))}
+            <span className="ml-2 text-muted-foreground">
+              {total > 0 ? `${((Number(p.value ?? 0) / total) * 100).toFixed(1)}%` : "—"}
+            </span>
+          </span>
+        </div>
+      ))}
+      <div className="mt-2 flex gap-3 border-t border-border pt-2">
+        <span className="text-muted-foreground">Total</span>
+        <span className="ml-auto tabular text-foreground">{formatBRL(total)}</span>
+      </div>
+    </div>
+  );
+}
+
+export function ComposicaoReceitaChart({
+  rows,
+}: {
+  rows: { mes: string; servico: string; receita_total: number }[];
+}) {
+  const { data, series } = buildReceitaStack(rows);
+  return (
+    <ResponsiveContainer width="100%" height="100%">
+      <BarChart data={data}>
+        <CartesianGrid strokeDasharray="3 3" stroke="#2A2D3E" vertical={false} />
+        <XAxis dataKey="periodo_curto" stroke="#8B8FA8" tick={{ fontSize: 11 }} />
+        <YAxis stroke="#8B8FA8" tick={{ fontSize: 11 }} width={70} tickFormatter={(v: number) => formatK(Number(v))} />
+        <RTooltip content={<TooltipReceita />} />
+        <Legend wrapperStyle={{ fontSize: 12 }} />
+        {series.map((s, i) => (
+          <Bar
+            key={s}
+            dataKey={s}
+            stackId="rec"
+            fill={SERVICO_CORES[s] ?? "#6B7280"}
+            name={s}
+            radius={i === series.length - 1 ? ([4, 4, 0, 0] as [number, number, number, number]) : 0}
+          />
+        ))}
+      </BarChart>
+    </ResponsiveContainer>
   );
 }
