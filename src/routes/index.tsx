@@ -142,8 +142,39 @@ function Dashboard() {
         }
       />
 
-      {/* Bloco 1 — cards da cascata */}
-      <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+      {/* Bloco 1 — metas (colapsável) */}
+      <CollapsibleSection
+        title={`Metas de ${labelPeriodo(periodo)}`}
+        storageKey="dash:metas-open"
+        actions={<BotaoEditarMetas onClick={() => setMetasOpen(true)} />}
+      >
+        {meta.isLoading ? (
+          <div className="grid gap-4 sm:grid-cols-3">
+            <CardsSkeleton n={3} h="h-52" />
+          </div>
+        ) : temMeta && d ? (
+          <div className="grid gap-4 sm:grid-cols-3">
+            <Gauge titulo="Meta Faturamento" atual={d.faturamento_bruto} meta={meta.data!.meta_faturamento} onClick={() => setMetasOpen(true)} />
+            <Gauge titulo="Meta Despesas" atual={d.total_despesas} meta={meta.data!.meta_despesas} teto onClick={() => setMetasOpen(true)} />
+            <Gauge titulo="Meta Lucro" atual={d.lucro_liquido} meta={meta.data!.meta_lucro} onClick={() => setMetasOpen(true)} />
+          </div>
+        ) : (
+          <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-dashed border-primary/50 bg-primary/10 px-5 py-6">
+            <div className="flex items-center gap-3">
+              <Target className="size-5 text-primary" />
+              <p className="text-sm text-primary">
+                Nenhuma meta cadastrada para {labelPeriodo(periodo)}. Defina as metas do mês →
+              </p>
+            </div>
+            <Button size="sm" onClick={() => setMetasOpen(true)}>
+              Definir metas do mês
+            </Button>
+          </div>
+        )}
+      </CollapsibleSection>
+
+      {/* Bloco 2 — cards da cascata */}
+      <div className="mt-4 grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
         {mes.isLoading ? (
           <CardsSkeleton />
         ) : d ? (
@@ -166,66 +197,10 @@ function Dashboard() {
         )}
       </div>
 
-      {/* Bloco 2 — gauges de meta */}
-      <div className="mt-4">
-        {meta.isLoading ? (
-          <div className="grid gap-4 sm:grid-cols-3">
-            <CardsSkeleton n={3} h="h-52" />
-          </div>
-        ) : temMeta && d ? (
-          <div>
-            <div className="mb-2 flex items-center justify-between">
-              <h2 className="text-sm font-semibold">Metas de {labelPeriodo(periodo)}</h2>
-              <BotaoEditarMetas onClick={() => setMetasOpen(true)} />
-            </div>
-            <div className="grid gap-4 sm:grid-cols-3">
-              <Gauge titulo="Meta Faturamento" atual={d.faturamento_bruto} meta={meta.data!.meta_faturamento} onClick={() => setMetasOpen(true)} />
-              <Gauge titulo="Meta Despesas" atual={d.total_despesas} meta={meta.data!.meta_despesas} teto onClick={() => setMetasOpen(true)} />
-              <Gauge titulo="Meta Lucro" atual={d.lucro_liquido} meta={meta.data!.meta_lucro} onClick={() => setMetasOpen(true)} />
-            </div>
-          </div>
-        ) : (
-          <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-dashed border-border bg-card px-5 py-6">
-            <div className="flex items-center gap-3">
-              <Target className="size-5 text-primary" />
-              <p className="text-sm text-muted-foreground">
-                Nenhuma meta cadastrada para {labelPeriodo(periodo)}.
-              </p>
-            </div>
-            <Button size="sm" onClick={() => setMetasOpen(true)}>
-              Definir metas do mês
-            </Button>
-          </div>
-        )}
-      </div>
-
-      {/* Bloco 3 — gráficos */}
+      {/* Bloco 3 — composições */}
       <div className="mt-4 grid gap-4 xl:grid-cols-2">
-        <SectionCard title="Evolução de resultados" description="Últimos 13 meses">
-          <div className="h-80 p-3">
-            {serie.isLoading ? (
-              <div className="h-full animate-pulse rounded-lg bg-secondary/40" />
-            ) : dados.length ? (
-              <ResponsiveContainer width="100%" height="100%">
-                <ComposedChart data={dados}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="#2A2D3E" vertical={false} />
-                  <XAxis dataKey="periodo_curto" stroke="#8B8FA8" tick={{ fontSize: 11 }} />
-                  <YAxis stroke="#8B8FA8" tick={{ fontSize: 11 }} width={70} tickFormatter={(v: number) => formatK(Number(v))} />
-                  <Tooltip content={<TooltipCustom />} />
-                  <Legend wrapperStyle={{ fontSize: 12 }} />
-                  <Area type="monotone" dataKey="faturamento_bruto" stroke="#22C55E" fill="rgba(34,197,94,0.10)" strokeWidth={2} name="Faturamento Bruto" />
-                  <Area type="monotone" dataKey="ebitda" stroke="#E8B800" fill="rgba(232,184,0,0.12)" strokeWidth={2} name="EBITDA" />
-                  <Line type="monotone" dataKey="lucro_liquido" stroke="#F5820A" strokeWidth={2.5} dot={{ fill: "#F5820A", r: 3 }} activeDot={{ r: 5 }} name="Lucro Líquido" />
-                </ComposedChart>
-              </ResponsiveContainer>
-            ) : (
-              <EmptyState message="Sem série histórica." />
-            )}
-          </div>
-        </SectionCard>
-
         <SectionCard title="Composição das despesas" description="Últimos 13 meses">
-          <div className="h-80 p-3">
+          <div className="p-3" style={{ height: 420 }}>
             {serie.isLoading ? (
               <div className="h-full animate-pulse rounded-lg bg-secondary/40" />
             ) : dados.length ? (
@@ -248,21 +223,47 @@ function Dashboard() {
             )}
           </div>
         </SectionCard>
+
+        <SectionCard title="Composição da receita" description="Últimos 13 meses">
+          <div className="p-3" style={{ height: 420 }}>
+            {receitaServicos.isLoading ? (
+              <div className="h-full animate-pulse rounded-lg bg-secondary/40" />
+            ) : (receitaServicos.data ?? []).length ? (
+              <ComposicaoReceitaChart rows={receitaServicos.data ?? []} />
+            ) : (
+              <EmptyState message="Sem receita por serviço." />
+            )}
+          </div>
+        </SectionCard>
       </div>
 
-      {/* Bloco 4 — cascata detalhada */}
-      <div className="mt-4">
-        {mes.isLoading ? (
-          <div className="h-40 animate-pulse rounded-xl border border-border bg-card" />
-        ) : d ? (
-          <CascataDetalhada d={d} />
-        ) : null}
-      </div>
+      {/* Bloco 4 — evoluções */}
+      <div className="mt-4 grid gap-4 xl:grid-cols-2">
+        <SectionCard title="Evolução de resultados" description="Últimos 13 meses">
+          <div className="p-3" style={{ height: 420 }}>
+            {serie.isLoading ? (
+              <div className="h-full animate-pulse rounded-lg bg-secondary/40" />
+            ) : dados.length ? (
+              <ResponsiveContainer width="100%" height="100%">
+                <ComposedChart data={dados}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="#2A2D3E" vertical={false} />
+                  <XAxis dataKey="periodo_curto" stroke="#8B8FA8" tick={{ fontSize: 11 }} />
+                  <YAxis stroke="#8B8FA8" tick={{ fontSize: 11 }} width={70} tickFormatter={(v: number) => formatK(Number(v))} />
+                  <Tooltip content={<TooltipCustom />} />
+                  <Legend wrapperStyle={{ fontSize: 12 }} />
+                  <Area type="monotone" dataKey="faturamento_bruto" stroke="#22C55E" fill="rgba(34,197,94,0.10)" strokeWidth={2} name="Faturamento Bruto" />
+                  <Area type="monotone" dataKey="ebitda" stroke="#E8B800" fill="rgba(232,184,0,0.12)" strokeWidth={2} name="EBITDA" />
+                  <Line type="monotone" dataKey="lucro_liquido" stroke="#F5820A" strokeWidth={2.5} dot={{ fill: "#F5820A", r: 3 }} activeDot={{ r: 5 }} name="Lucro Líquido" />
+                </ComposedChart>
+              </ResponsiveContainer>
+            ) : (
+              <EmptyState message="Sem série histórica." />
+            )}
+          </div>
+        </SectionCard>
 
-      {/* Bloco 5 — margens ao longo do tempo */}
-      <div className="mt-4">
         <SectionCard title="Evolução das margens" description="% sobre o faturamento bruto">
-          <div className="h-80 p-3">
+          <div className="p-3" style={{ height: 420 }}>
             {serie.isLoading ? (
               <div className="h-full animate-pulse rounded-lg bg-secondary/40" />
             ) : dados.length ? (
@@ -285,6 +286,16 @@ function Dashboard() {
           </div>
         </SectionCard>
       </div>
+
+      {/* Bloco 5 — cascata detalhada (último) */}
+      <div className="mt-4">
+        {mes.isLoading ? (
+          <div className="h-40 animate-pulse rounded-xl border border-border bg-card" />
+        ) : d ? (
+          <CascataDetalhada d={d} />
+        ) : null}
+      </div>
+
 
       <MetasDialog
         open={metasOpen}
