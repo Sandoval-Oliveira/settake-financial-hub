@@ -60,7 +60,7 @@ function periodoAtual() {
 
 function shiftPeriodo(periodo: string, delta: number) {
   const [y, m] = periodo.split("-").map(Number);
-  const d = new Date(y, (m ?? 1) - 1 + delta, 1);
+  const d = new Date(y ?? 1970, (m ?? 1) - 1 + delta, 1);
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
 }
 
@@ -86,7 +86,9 @@ function Dashboard() {
   const [metasOpen, setMetasOpen] = useState(false);
   const qc = useQueryClient();
 
-  const [ano, mesNum] = periodo.split("-").map(Number);
+  const parts = periodo.split("-").map(Number);
+  const ano = parts[0] ?? 0;
+  const mesNum = parts[1] ?? 1;
   const mes = useQuery(dashboardMesQuery(periodo));
   const serie = useQuery(dashboardSerieQuery);
   const meta = useQuery(metaQuery(ano, mesNum));
