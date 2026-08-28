@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { ChevronDown, Pencil, TrendingDown, TrendingUp } from "lucide-react";
-import { RadialBar, RadialBarChart, ResponsiveContainer } from "recharts";
+import { PolarAngleAxis, RadialBar, RadialBarChart, ResponsiveContainer } from "recharts";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -138,7 +138,8 @@ export function Gauge({
             barSize={20}
             data={[{ value: Math.min(Math.max(pct, 0), 100), fill: color }]}
           >
-            <RadialBar dataKey="value" cornerRadius={4} background={{ fill: "#2A2D3E" }} domain={[0, 100]} />
+            <PolarAngleAxis type="number" domain={[0, 100]} angleAxisId={0} tick={false} />
+            <RadialBar dataKey="value" cornerRadius={4} background={{ fill: "#2A2D3E" }} angleAxisId={0} />
           </RadialBarChart>
         </ResponsiveContainer>
       </div>
