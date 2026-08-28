@@ -485,9 +485,9 @@ export function ComposicaoReceitaChart({
             key={s}
             dataKey={s}
             stackId="rec"
-            fill={SERVICO_CORES[s]}
+            fill={SERVICO_CORES[s] ?? "#6B7280"}
             name={s}
-            radius={i === series.length - 1 ? [4, 4, 0, 0] : undefined}
+            radius={i === series.length - 1 ? ([4, 4, 0, 0] as [number, number, number, number]) : 0}
           />
         ))}
       </BarChart>
