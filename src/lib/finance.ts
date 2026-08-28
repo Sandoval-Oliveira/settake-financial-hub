@@ -225,3 +225,129 @@ export async function writeRow(
         : await q.delete().eq("id", id);
   if (error) throw new Error(error.message);
 }
+/* ---------------- Dashboard financeiro (views novas) ---------------- */
+
+export interface DashboardFinanceiro {
+  periodo: string;
+  periodo_curto: string;
+  ano: number;
+  mes_num: number;
+  faturamento_bruto: number;
+  receita_vendas: number;
+  receita_financeira: number;
+  custos_deducoes: number;
+  lucro_bruto: number;
+  despesas_variaveis: number;
+  desp_var_mobilidade: number;
+  desp_var_estrutura: number;
+  desp_var_comercial: number;
+  margem_contribuicao: number;
+  despesas_fixas: number;
+  ebitda: number;
+  despesas_nao_operacionais: number;
+  desp_capex: number;
+  desp_crescimento: number;
+  resultado_antes_socios: number;
+  socios: number;
+  lucro_liquido: number;
+  total_despesas: number;
+  fat_bruto_var_pct: number | null;
+  lucro_bruto_var_pct: number | null;
+  margem_var_pct: number | null;
+  ebitda_var_pct: number | null;
+  lucro_liquido_var_pct: number | null;
+  geracao_caixa_var_pct: number | null;
+  custos_deducoes_pct: number;
+  lucro_bruto_pct: number;
+  despesas_variaveis_pct: number;
+  margem_contribuicao_pct: number;
+  despesas_fixas_pct: number;
+  ebitda_pct: number;
+  despesas_nao_op_pct: number;
+  geracao_caixa_pct: number;
+  socios_pct: number;
+  lucro_liquido_pct: number;
+  total_despesas_pct: number;
+}
+
+export interface DashboardGrafico extends Partial<DashboardFinanceiro> {
+  periodo: string;
+  periodo_curto: string;
+  meta_faturamento: number | null;
+  meta_despesas: number | null;
+  meta_lucro: number | null;
+}
+
+export interface MetaFinanceira {
+  id?: number;
+  ano: number;
+  mes: number;
+  meta_faturamento: number;
+  meta_despesas: number;
+  meta_lucro: number;
+}
+
+export const dashboardMesQuery = (periodo: string) =>
+  queryOptions({
+    queryKey: ["dashboard_financeiro", periodo],
+    staleTime: 2 * 60 * 1000,
+    queryFn: async (): Promise<DashboardFinanceiro | null> => {
+      const { data, error } = await db
+        .from("dashboard_financeiro")
+        .select("*")
+        .eq("periodo", periodo)
+        .maybeSingle();
+      if (error) throw new Error(error.message);
+      return (data ?? null) as DashboardFinanceiro | null;
+    },
+  });
+
+export const dashboardPeriodosQuery = queryOptions({
+  queryKey: ["dashboard_financeiro", "periodos"],
+  staleTime: 2 * 60 * 1000,
+  queryFn: async (): Promise<string[]> => {
+    const { data, error } = await db
+      .from("dashboard_financeiro")
+      .select("periodo")
+      .order("periodo", { ascending: false });
+    if (error) throw new Error(error.message);
+    return ((data ?? []) as { periodo: string }[]).map((r) => r.periodo);
+  },
+});
+
+export const dashboardSerieQuery = queryOptions({
+  queryKey: ["dashboard_financeiro_graficos"],
+  staleTime: 2 * 60 * 1000,
+  queryFn: () => selectAll<DashboardGrafico>("dashboard_financeiro_graficos", (q) => q.order("periodo", { ascending: true })),
+});
+
+export const metaQuery = (ano: number, mes: number) =>
+  queryOptions({
+    queryKey: ["metas_financeiras", ano, mes],
+    queryFn: async (): Promise<MetaFinanceira | null> => {
+      const { data, error } = await db
+        .from("metas_financeiras")
+        .select("*")
+        .eq("ano", ano)
+        .eq("mes", mes)
+        .maybeSingle();
+      if (error) throw new Error(error.message);
+      return (data ?? null) as MetaFinanceira | null;
+    },
+  });
+
+export async function upsertMeta(meta: MetaFinanceira) {
+  const { error } = await db
+    .from("metas_financeiras")
+    .upsert(
+      {
+        ano: meta.ano,
+        mes: meta.mes,
+        meta_faturamento: meta.meta_faturamento,
+        meta_despesas: meta.meta_despesas,
+        meta_lucro: meta.meta_lucro,
+      },
+      { onConflict: "ano,mes" },
+    );
+  if (error) throw new Error(error.message);
+}
