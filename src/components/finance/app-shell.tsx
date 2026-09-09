@@ -5,10 +5,8 @@ import {
   CalendarDays,
   ChevronLeft,
   ChevronRight,
-  CreditCard,
   LayoutDashboard,
   Menu,
-  RefreshCw,
   Users,
   Wallet,
 } from "lucide-react";
@@ -17,8 +15,6 @@ import { cn } from "@/lib/utils";
 const NAV = [
   { to: "/", label: "Dashboard", icon: LayoutDashboard },
   { to: "/lancamentos", label: "Lançamentos", icon: Wallet },
-  { to: "/recorrentes", label: "Recorrentes", icon: RefreshCw },
-  { to: "/cartoes", label: "Cartões", icon: CreditCard },
   { to: "/calendario", label: "Calendário", icon: CalendarDays },
   { to: "/relatorios", label: "Relatórios", icon: BarChart3 },
   { to: "/cadastros", label: "Cadastros", icon: Users },

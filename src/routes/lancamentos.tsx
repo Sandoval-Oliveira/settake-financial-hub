@@ -11,7 +11,6 @@ import {
   Copy,
   GripVertical,
   Pencil,
-  RefreshCw,
   Square,
   Trash2,
 } from "lucide-react";
@@ -348,24 +347,8 @@ function Lancamentos() {
     switch (key) {
       case "vencimento":
         return <span className="truncate whitespace-nowrap">{formatDate(t.vencimento)}</span>;
-      case "nome": {
-        const recorrente = (raw.data ?? []).find((r) => r.id === t.id)?.lancamento_recorrente_id;
-        return (
-          <span className="flex items-center gap-1.5 truncate">
-            <span className="truncate">{t.nome}</span>
-            {recorrente ? (
-              <TooltipProvider>
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <RefreshCw className="size-3.5 shrink-0 text-primary" />
-                  </TooltipTrigger>
-                  <TooltipContent>Gerado automaticamente</TooltipContent>
-                </Tooltip>
-              </TooltipProvider>
-            ) : null}
-          </span>
-        );
-      }
+      case "nome":
+        return <span className="block truncate">{t.nome}</span>;
       case "tipo":
         return <TipoBadge tipo={t.tipo} />;
       case "natureza":

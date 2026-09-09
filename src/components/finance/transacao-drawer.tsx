@@ -414,7 +414,7 @@ export function TransacaoDrawer({
               <SelectTrigger><SelectValue placeholder="Selecione" /></SelectTrigger>
               <SelectContent>
                 {(contas.data ?? []).map((c) => (
-                  <SelectItem key={c.id} value={String(c.id)}>{c.nome}{(c.tipo ?? "").toLowerCase().includes("cart") ? " · Cartão" : ""}</SelectItem>
+                  <SelectItem key={c.id} value={String(c.id)}>{c.nome}</SelectItem>
                 ))}
               </SelectContent>
             </Select>
@@ -429,7 +429,7 @@ export function TransacaoDrawer({
                   {(contas.data ?? [])
                     .filter((c) => String(c.id) !== form.conta_origem_id)
                     .map((c) => (
-                      <SelectItem key={c.id} value={String(c.id)}>{c.nome}{(c.tipo ?? "").toLowerCase().includes("cart") ? " · Cartão" : ""}</SelectItem>
+                      <SelectItem key={c.id} value={String(c.id)}>{c.nome}</SelectItem>
                     ))}
                 </SelectContent>
               </Select>
