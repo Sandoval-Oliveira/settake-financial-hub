@@ -25,13 +25,13 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/comp
 import {
   contasQuery,
   saldoCartoesQuery,
-  transacoesQuery,
+  transacoesRawQuery,
   writeRow,
   FINANCE_KEYS,
   RECORRENTE_KEYS,
   type SaldoCartao,
 } from "@/lib/finance";
-import { formatDateBR, formatMoney, isoDate } from "@/lib/format";
+import { formatDate, formatMoney, isoDate } from "@/lib/format";
 import { cn } from "@/lib/utils";
 import { EmptyState, Money, PageHeader, SectionCard, TableSkeleton } from "@/components/finance/ui-bits";
 
@@ -51,7 +51,7 @@ function Cartoes() {
   const queryClient = useQueryClient();
   const cartoes = useQuery(saldoCartoesQuery);
   const contas = useQuery(contasQuery);
-  const transacoes = useQuery(transacoesQuery);
+  const transacoes = useQuery(transacoesRawQuery);
 
   const [selecionado, setSelecionado] = useState<number | null>(null);
   const [pagando, setPagando] = useState<SaldoCartao | null>(null);
@@ -192,7 +192,7 @@ function Cartoes() {
                   <tbody>
                     {movimentos.map((t, i) => (
                       <tr key={t.id} className={cn("hover:bg-surface-hover", i % 2 && "bg-secondary/25")}>
-                        <td className="px-4 py-2 text-muted-foreground">{formatDateBR(t.vencimento)}</td>
+                        <td className="px-4 py-2 text-muted-foreground">{formatDate(t.vencimento)}</td>
                         <td className="px-4 py-2">
                           <span className="flex items-center gap-2">
                             {t.nome}
