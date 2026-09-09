@@ -11,6 +11,7 @@ import {
   Copy,
   GripVertical,
   Pencil,
+  RefreshCw,
   Square,
   Trash2,
 } from "lucide-react";
