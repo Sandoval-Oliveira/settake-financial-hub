@@ -21,6 +21,7 @@ import {
   dashboardMesQuery,
   dashboardSerieQuery,
   metaQuery,
+  mrrAtivoQuery,
   receitaPorServicoQuery,
   upsertMeta,
   type DashboardFinanceiro,
@@ -96,6 +97,8 @@ function Dashboard() {
   const serie = useQuery(dashboardSerieQuery);
   const meta = useQuery(metaQuery(ano, mesNum));
   const receitaServicos = useQuery(receitaPorServicoQuery);
+  const mrr = useQuery(mrrAtivoQuery);
+  const mrrTotal = (mrr.data ?? []).reduce((s, r) => s + Number(r.valor_mensal ?? 0), 0);
 
   const salvarMeta = useMutation({
     mutationFn: (v: { meta_faturamento: number; meta_despesas: number; meta_lucro: number }) =>
@@ -145,6 +148,18 @@ function Dashboard() {
           </div>
         }
       />
+
+      <div className="mb-4 flex items-center justify-between rounded-xl border border-primary/30 bg-primary/5 px-4 py-3">
+        <div>
+          <p className="text-xs text-muted-foreground">MRR — receita recorrente mensal</p>
+          <p className="text-xl font-semibold tabular text-primary">
+            {mrrTotal.toLocaleString("pt-BR", { style: "currency", currency: "BRL" })}
+          </p>
+        </div>
+        <span className="text-xs text-muted-foreground">
+          {(mrr.data ?? []).length} assinatura(s) ativa(s)
+        </span>
+      </div>
 
       {/* Bloco 1 — metas (colapsável) */}
       <CollapsibleSection
