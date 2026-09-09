@@ -356,3 +356,113 @@ export async function upsertMeta(meta: MetaFinanceira) {
     );
   if (error) throw new Error(error.message);
 }
+
+/* ---------------- Recorrentes & Cartões ---------------- */
+
+export type FrequenciaRecorrente = "Mensal" | "Trimestral" | "Semestral" | "Anual";
+export const FREQUENCIAS: FrequenciaRecorrente[] = ["Mensal", "Trimestral", "Semestral", "Anual"];
+export type StatusRecorrente = "Ativo" | "Pausado" | "Cancelado";
+export const STATUS_RECORRENTE: StatusRecorrente[] = ["Ativo", "Pausado", "Cancelado"];
+
+export interface LancamentoRecorrente {
+  id: number;
+  nome: string;
+  tipo: "Receita" | "Despesa";
+  natureza_id: number | null;
+  grupo_id: number | null;
+  item_id: number | null;
+  pessoa_id: number | null;
+  conta_origem_id: number | null;
+  valor: number;
+  dia_vencimento: number;
+  frequencia: string;
+  data_inicio: string;
+  data_fim: string | null;
+  status: string;
+  meses_antecedencia: number | null;
+  ultima_geracao: string | null;
+  observacoes: string | null;
+}
+
+export interface MrrAtivo {
+  id: number;
+  nome: string;
+  pessoa_id: number | null;
+  valor: number;
+  frequencia: string;
+  dia_vencimento: number;
+  data_inicio: string;
+  status: string;
+  valor_mensal: number;
+}
+
+export interface CustoFixoComprometido {
+  id: number;
+  nome: string;
+  conta_origem_id: number | null;
+  valor: number;
+  frequencia: string;
+  dia_vencimento: number;
+  data_inicio: string;
+  status: string;
+  custo_mensal: number;
+}
+
+export interface ForecastRecorrente {
+  periodo: string;
+  periodo_curto: string;
+  receita_prevista: number;
+  despesa_prevista: number;
+  saldo: number;
+}
+
+export interface SaldoCartao {
+  id: number;
+  nome: string;
+  limite: number | null;
+  dia_fechamento: number | null;
+  dia_vencimento_fatura: number | null;
+  saldo_devedor: number;
+}
+
+export const recorrentesQuery = queryOptions({
+  queryKey: ["lancamentos_recorrentes"],
+  queryFn: () =>
+    selectAll<LancamentoRecorrente>("lancamentos_recorrentes", (q) => q.order("nome")),
+});
+
+export const mrrAtivoQuery = queryOptions({
+  queryKey: ["mrr_ativo"],
+  queryFn: () => selectAll<MrrAtivo>("mrr_ativo", (q) => q.order("valor_mensal", { ascending: false })),
+});
+
+export const custoFixoQuery = queryOptions({
+  queryKey: ["custo_fixo_comprometido"],
+  queryFn: () =>
+    selectAll<CustoFixoComprometido>("custo_fixo_comprometido", (q) =>
+      q.order("custo_mensal", { ascending: false }),
+    ),
+});
+
+export const forecastQuery = queryOptions({
+  queryKey: ["forecast_recorrentes"],
+  queryFn: () => selectAll<ForecastRecorrente>("forecast_recorrentes", (q) => q.order("periodo")),
+});
+
+export const saldoCartoesQuery = queryOptions({
+  queryKey: ["saldo_cartoes"],
+  queryFn: () => selectAll<SaldoCartao>("saldo_cartoes", (q) => q.order("nome")),
+});
+
+export const RECORRENTE_KEYS = [
+  ["lancamentos_recorrentes"],
+  ["mrr_ativo"],
+  ["custo_fixo_comprometido"],
+  ["forecast_recorrentes"],
+  ["saldo_cartoes"],
+];
+
+export async function gerarTransacoesRecorrentes() {
+  const { error } = await (supabase as any).rpc("gerar_transacoes_recorrentes");
+  if (error) throw new Error(error.message);
+}
