@@ -44,7 +44,7 @@ export const Route = createFileRoute("/cartoes")({
       { property: "og:description", content: "Acompanhe faturas, limites e pagamentos dos cartões." },
     ],
   }),
-  component: Cartoes;
+  component: Cartoes,
 });
 
 function Cartoes() {
