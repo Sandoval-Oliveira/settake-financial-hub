@@ -67,7 +67,7 @@ const ABAS: { key: Aba; label: string }[] = [
   { key: "forecast", label: "Forecast" },
 ];
 
-function Kpi({ label, value, hint }: { label: string; value: string; hint?: string }) {
+function Kpi({ label, value, hint }: { label: string; value: string; hint?: string | undefined }) {
   return (
     <div className="rounded-xl border border-border bg-card px-4 py-3">
       <p className="text-xs text-muted-foreground">{label}</p>
