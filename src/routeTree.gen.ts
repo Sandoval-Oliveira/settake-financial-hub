@@ -13,6 +13,7 @@ import { Route as IndexRouteImport } from './routes/index'
 import { Route as CadastrosRouteImport } from './routes/cadastros'
 import { Route as CalendarioRouteImport } from './routes/calendario'
 import { Route as LancamentosRouteImport } from './routes/lancamentos'
+import { Route as RecorrentesRouteImport } from './routes/recorrentes'
 import { Route as RelatoriosRouteImport } from './routes/relatorios'
 
 const IndexRoute = IndexRouteImport.update({
@@ -35,6 +36,11 @@ const LancamentosRoute = LancamentosRouteImport.update({
   path: '/lancamentos',
   getParentRoute: () => rootRouteImport,
 } as any)
+const RecorrentesRoute = RecorrentesRouteImport.update({
+  id: '/recorrentes',
+  path: '/recorrentes',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const RelatoriosRoute = RelatoriosRouteImport.update({
   id: '/relatorios',
   path: '/relatorios',
@@ -46,6 +52,7 @@ export interface FileRoutesByFullPath {
   '/cadastros': typeof CadastrosRoute
   '/calendario': typeof CalendarioRoute
   '/lancamentos': typeof LancamentosRoute
+  '/recorrentes': typeof RecorrentesRoute
   '/relatorios': typeof RelatoriosRoute
 }
 export interface FileRoutesByTo {
@@ -53,6 +60,7 @@ export interface FileRoutesByTo {
   '/cadastros': typeof CadastrosRoute
   '/calendario': typeof CalendarioRoute
   '/lancamentos': typeof LancamentosRoute
+  '/recorrentes': typeof RecorrentesRoute
   '/relatorios': typeof RelatoriosRoute
 }
 export interface FileRoutesById {
@@ -61,19 +69,33 @@ export interface FileRoutesById {
   '/cadastros': typeof CadastrosRoute
   '/calendario': typeof CalendarioRoute
   '/lancamentos': typeof LancamentosRoute
+  '/recorrentes': typeof RecorrentesRoute
   '/relatorios': typeof RelatoriosRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/cadastros' | '/calendario' | '/lancamentos' | '/relatorios'
+  fullPaths:
+    | '/'
+    | '/cadastros'
+    | '/calendario'
+    | '/lancamentos'
+    | '/recorrentes'
+    | '/relatorios'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/cadastros' | '/calendario' | '/lancamentos' | '/relatorios'
+  to:
+    | '/'
+    | '/cadastros'
+    | '/calendario'
+    | '/lancamentos'
+    | '/recorrentes'
+    | '/relatorios'
   id:
     | '__root__'
     | '/'
     | '/cadastros'
     | '/calendario'
     | '/lancamentos'
+    | '/recorrentes'
     | '/relatorios'
   fileRoutesById: FileRoutesById
 }
@@ -82,6 +104,7 @@ export interface RootRouteChildren {
   CadastrosRoute: typeof CadastrosRoute
   CalendarioRoute: typeof CalendarioRoute
   LancamentosRoute: typeof LancamentosRoute
+  RecorrentesRoute: typeof RecorrentesRoute
   RelatoriosRoute: typeof RelatoriosRoute
 }
 
@@ -115,6 +138,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof LancamentosRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/recorrentes': {
+      id: '/recorrentes'
+      path: '/recorrentes'
+      fullPath: '/recorrentes'
+      preLoaderRoute: typeof RecorrentesRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/relatorios': {
       id: '/relatorios'
       path: '/relatorios'
@@ -130,6 +160,7 @@ const rootRouteChildren: RootRouteChildren = {
   CadastrosRoute: CadastrosRoute,
   CalendarioRoute: CalendarioRoute,
   LancamentosRoute: LancamentosRoute,
+  RecorrentesRoute: RecorrentesRoute,
   RelatoriosRoute: RelatoriosRoute,
 }
 export const routeTree = rootRouteImport
