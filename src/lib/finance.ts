@@ -14,6 +14,10 @@ export interface ContaBancaria {
   nome: string;
   saldo_inicial: number;
   criado_em?: string;
+  tipo?: string | null;
+  dia_fechamento?: number | null;
+  dia_vencimento_fatura?: number | null;
+  limite?: number | null;
 }
 
 export interface Pessoa {
@@ -54,6 +58,7 @@ export interface Transacao {
   pessoa_id: number | null;
   vencimento: string;
   conciliada: boolean;
+  lancamento_recorrente_id?: number | null;
 }
 
 export interface TransacaoCompleta extends Omit<Transacao, "natureza_id" | "grupo_id" | "item_id" | "conta_origem_id" | "conta_destino_id" | "pessoa_id"> {
