@@ -131,11 +131,14 @@ function Cartoes() {
               const pct = limite > 0 ? Math.min(100, (devedor / limite) * 100) : 0;
               const ativo = atual?.id === c.id;
               return (
-                <button
+                <div
                   key={c.id}
+                  role="button"
+                  tabIndex={0}
                   onClick={() => setSelecionado(c.id)}
+                  onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") setSelecionado(c.id); }}
                   className={cn(
-                    "rounded-xl border bg-card p-4 text-left transition-colors",
+                    "cursor-pointer rounded-xl border bg-card p-4 text-left transition-colors",
                     ativo ? "border-primary" : "border-border hover:border-primary/50",
                   )}
                 >
@@ -167,7 +170,7 @@ function Cartoes() {
                       Pagar fatura
                     </Button>
                   </div>
-                </button>
+                </div>
               );
             })}
           </div>
