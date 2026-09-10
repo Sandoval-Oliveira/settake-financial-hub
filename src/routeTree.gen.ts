@@ -11,6 +11,7 @@
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as CadastrosRouteImport } from './routes/cadastros'
+import { Route as RecorrentesRouteImport } from './routes/recorrentes'
 import { Route as LoginRouteImport } from './routes/login'
 import { Route as EsqueciSenhaRouteImport } from './routes/esqueci-senha'
 import { Route as RedefinirSenhaRouteImport } from './routes/redefinir-senha'
@@ -26,6 +27,11 @@ const IndexRoute = IndexRouteImport.update({
 const CadastrosRoute = CadastrosRouteImport.update({
   id: '/cadastros',
   path: '/cadastros',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const RecorrentesRoute = RecorrentesRouteImport.update({
+  id: '/recorrentes',
+  path: '/recorrentes',
   getParentRoute: () => rootRouteImport,
 } as any)
 const LoginRoute = LoginRouteImport.update({
@@ -62,6 +68,7 @@ const RelatoriosRoute = RelatoriosRouteImport.update({
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/cadastros': typeof CadastrosRoute
+  '/recorrentes': typeof RecorrentesRoute
   '/login': typeof LoginRoute
   '/esqueci-senha': typeof EsqueciSenhaRoute
   '/redefinir-senha': typeof RedefinirSenhaRoute
@@ -72,6 +79,7 @@ export interface FileRoutesByFullPath {
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/cadastros': typeof CadastrosRoute
+  '/recorrentes': typeof RecorrentesRoute
   '/login': typeof LoginRoute
   '/esqueci-senha': typeof EsqueciSenhaRoute
   '/redefinir-senha': typeof RedefinirSenhaRoute
@@ -83,6 +91,7 @@ export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/cadastros': typeof CadastrosRoute
+  '/recorrentes': typeof RecorrentesRoute
   '/login': typeof LoginRoute
   '/esqueci-senha': typeof EsqueciSenhaRoute
   '/redefinir-senha': typeof RedefinirSenhaRoute
@@ -92,13 +101,15 @@ export interface FileRoutesById {
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/cadastros' | '/login' | '/esqueci-senha' | '/redefinir-senha' | '/calendario' | '/lancamentos' | '/relatorios'
+  fullPaths: '/' | '/cadastros' | '/recorrentes' | '/login' | '/esqueci-senha' | '/redefinir-senha' | '/calendario' | '/lancamentos' | '/relatorios'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/cadastros' | '/login' | '/esqueci-senha' | '/redefinir-senha' | '/calendario' | '/lancamentos' | '/relatorios'
+  to: '/' | '/cadastros' | '/recorrentes' | '/login' | '/esqueci-senha' | '/redefinir-senha' | '/calendario' | '/lancamentos' | '/relatorios'
   id:
     | '__root__'
     | '/'
-    | '/cadastros' | '/login' | '/esqueci-senha' | '/redefinir-senha'
+    | '/cadastros'
+    | '/recorrentes'
+    | '/login' | '/esqueci-senha' | '/redefinir-senha'
     | '/calendario'
     | '/lancamentos'
     | '/relatorios'
@@ -107,6 +118,7 @@ export interface FileRouteTypes {
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   CadastrosRoute: typeof CadastrosRoute
+  RecorrentesRoute: typeof RecorrentesRoute
   LoginRoute: typeof LoginRoute
   EsqueciSenhaRoute: typeof EsqueciSenhaRoute
   RedefinirSenhaRoute: typeof RedefinirSenhaRoute
@@ -129,6 +141,13 @@ declare module '@tanstack/react-router' {
       path: '/cadastros'
       fullPath: '/cadastros'
       preLoaderRoute: typeof CadastrosRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/recorrentes': {
+      id: '/recorrentes'
+      path: '/recorrentes'
+      fullPath: '/recorrentes'
+      preLoaderRoute: typeof RecorrentesRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/login': {
@@ -179,6 +198,7 @@ declare module '@tanstack/react-router' {
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   CadastrosRoute: CadastrosRoute,
+  RecorrentesRoute: RecorrentesRoute,
   LoginRoute: LoginRoute,
   EsqueciSenhaRoute: EsqueciSenhaRoute,
   RedefinirSenhaRoute: RedefinirSenhaRoute,

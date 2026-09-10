@@ -8,6 +8,7 @@ import {
   LayoutDashboard,
   LogOut,
   Menu,
+  Repeat,
   Users,
   Wallet,
 } from "lucide-react";
@@ -18,6 +19,7 @@ const NAV = [
   { to: "/", label: "Dashboard", icon: LayoutDashboard },
   { to: "/lancamentos", label: "Lançamentos", icon: Wallet },
   { to: "/calendario", label: "Calendário", icon: CalendarDays },
+  { to: "/recorrentes", label: "Recorrentes", icon: Repeat },
   { to: "/relatorios", label: "Relatórios", icon: BarChart3 },
   { to: "/cadastros", label: "Cadastros", icon: Users },
 ] as const;
