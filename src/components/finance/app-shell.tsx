@@ -6,11 +6,13 @@ import {
   ChevronLeft,
   ChevronRight,
   LayoutDashboard,
+  LogOut,
   Menu,
   Users,
   Wallet,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { PAPEL_LABEL, useAuth } from "@/lib/auth";
 
 const NAV = [
   { to: "/", label: "Dashboard", icon: LayoutDashboard },
@@ -19,6 +21,32 @@ const NAV = [
   { to: "/relatorios", label: "Relatórios", icon: BarChart3 },
   { to: "/cadastros", label: "Cadastros", icon: Users },
 ] as const;
+
+function UserFooter({ collapsed }: { collapsed: boolean }) {
+  const { profile, user, role, signOut } = useAuth();
+  const nome = profile?.nome || user?.email?.split("@")[0] || "";
+  return (
+    <div className="mt-auto border-t border-sidebar-border px-3 py-3">
+      <div className={cn("flex items-center gap-2", collapsed && "justify-center")}>
+        {!collapsed ? (
+          <div className="min-w-0 flex-1 leading-tight">
+            <p className="truncate text-sm font-medium text-foreground">{nome}</p>
+            <p className="truncate text-xs text-muted-foreground">{role ? PAPEL_LABEL[role] : ""}</p>
+          </div>
+        ) : null}
+        <button
+          type="button"
+          title="Sair"
+          aria-label="Sair"
+          onClick={() => void signOut()}
+          className="rounded-md p-2 text-muted-foreground hover:bg-sidebar-accent hover:text-foreground"
+        >
+          <LogOut className="size-4" />
+        </button>
+      </div>
+    </div>
+  );
+}
 
 function NavList({ collapsed, onNavigate }: { collapsed: boolean; onNavigate?: () => void }) {
   const pathname = useRouterState({ select: (s) => s.location.pathname });
@@ -92,6 +120,7 @@ export function AppShell({ children }: { children: ReactNode }) {
       >
         <Logo collapsed={collapsed} />
         <NavList collapsed={collapsed} />
+        <UserFooter collapsed={collapsed} />
         {!collapsed && (
           <div className="border-t border-sidebar-border px-4 py-3">
             <p className="text-xs text-muted-foreground">SetTake Finance</p>
@@ -122,6 +151,7 @@ export function AppShell({ children }: { children: ReactNode }) {
       {mobileOpen && (
         <div className="fixed inset-x-0 top-[57px] z-30 border-b border-border bg-sidebar md:hidden">
           <NavList collapsed={false} onNavigate={() => setMobileOpen(false)} />
+          <UserFooter collapsed={false} />
         </div>
       )}
 
