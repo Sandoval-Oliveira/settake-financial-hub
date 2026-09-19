@@ -218,7 +218,7 @@ export function calcularDataFim(
   frequencia: FrequenciaRecorrente,
   totalOcorrencias: number,
 ): string {
-  const [ano, mes, dia] = dataInicio.split("-").map(Number);
+  const [ano = 1970, mes = 1, dia = 1] = dataInicio.split("-").map(Number);
   const passo = PASSO_MESES[frequencia];
   const base = new Date(Date.UTC(ano, mes - 1, 1));
   base.setUTCMonth(base.getUTCMonth() + (totalOcorrencias - 1) * passo);
@@ -234,7 +234,7 @@ export function previaVencimentos(
   frequencia: FrequenciaRecorrente,
   quantidade: number,
 ): string[] {
-  const [ano, mes] = dataInicio.split("-").map(Number);
+  const [ano = 1970, mes = 1] = dataInicio.split("-").map(Number);
   const passo = PASSO_MESES[frequencia];
   const datas: string[] = [];
   for (let i = 0; i < Math.max(0, Math.min(quantidade, 60)); i++) {
