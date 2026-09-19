@@ -17,21 +17,33 @@ export type Database = {
       contas_bancarias: {
         Row: {
           criado_em: string
+          dia_fechamento: number | null
+          dia_vencimento_fatura: number | null
           id: number
+          limite: number | null
           nome: string
           saldo_inicial: number
+          tipo: string | null
         }
         Insert: {
           criado_em?: string
+          dia_fechamento?: number | null
+          dia_vencimento_fatura?: number | null
           id?: number
+          limite?: number | null
           nome: string
           saldo_inicial?: number
+          tipo?: string | null
         }
         Update: {
           criado_em?: string
+          dia_fechamento?: number | null
+          dia_vencimento_fatura?: number | null
           id?: number
+          limite?: number | null
           nome?: string
           saldo_inicial?: number
+          tipo?: string | null
         }
         Relationships: []
       }
@@ -114,6 +126,7 @@ export type Database = {
           id: number
           nome: string
           ordem: number
+          probabilidade_fechamento: number | null
           tipo_final: string | null
         }
         Insert: {
@@ -122,6 +135,7 @@ export type Database = {
           id?: number
           nome: string
           ordem: number
+          probabilidade_fechamento?: number | null
           tipo_final?: string | null
         }
         Update: {
@@ -130,6 +144,7 @@ export type Database = {
           id?: number
           nome?: string
           ordem?: number
+          probabilidade_fechamento?: number | null
           tipo_final?: string | null
         }
         Relationships: []
@@ -534,16 +549,19 @@ export type Database = {
       }
       grupo: {
         Row: {
+          ativo: boolean
           id: number
           natureza_id: number
           nome: string
         }
         Insert: {
+          ativo?: boolean
           id?: number
           natureza_id: number
           nome: string
         }
         Update: {
+          ativo?: boolean
           id?: number
           natureza_id?: number
           nome?: string
@@ -560,16 +578,19 @@ export type Database = {
       }
       item: {
         Row: {
+          ativo: boolean
           grupo_id: number
           id: number
           nome: string
         }
         Insert: {
+          ativo?: boolean
           grupo_id: number
           id?: number
           nome: string
         }
         Update: {
+          ativo?: boolean
           grupo_id?: number
           id?: number
           nome?: string
@@ -581,6 +602,187 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "grupo"
             referencedColumns: ["id"]
+          },
+        ]
+      }
+      lancamentos_recorrentes: {
+        Row: {
+          atualizado_em: string | null
+          conta_origem_id: number | null
+          criado_em: string | null
+          data_fim: string | null
+          data_inicio: string
+          dia_vencimento: number
+          frequencia: string | null
+          grupo_id: number | null
+          id: number
+          item_id: number | null
+          meses_antecedencia: number | null
+          natureza_id: number | null
+          nome: string
+          observacoes: string | null
+          pessoa_id: number | null
+          renovado_de_id: number | null
+          status: string | null
+          tipo: string
+          total_ocorrencias: number | null
+          ultima_geracao: string | null
+          valor: number
+          valor_estimado: boolean
+        }
+        Insert: {
+          atualizado_em?: string | null
+          conta_origem_id?: number | null
+          criado_em?: string | null
+          data_fim?: string | null
+          data_inicio?: string
+          dia_vencimento: number
+          frequencia?: string | null
+          grupo_id?: number | null
+          id?: number
+          item_id?: number | null
+          meses_antecedencia?: number | null
+          natureza_id?: number | null
+          nome: string
+          observacoes?: string | null
+          pessoa_id?: number | null
+          renovado_de_id?: number | null
+          status?: string | null
+          tipo: string
+          total_ocorrencias?: number | null
+          ultima_geracao?: string | null
+          valor: number
+          valor_estimado?: boolean
+        }
+        Update: {
+          atualizado_em?: string | null
+          conta_origem_id?: number | null
+          criado_em?: string | null
+          data_fim?: string | null
+          data_inicio?: string
+          dia_vencimento?: number
+          frequencia?: string | null
+          grupo_id?: number | null
+          id?: number
+          item_id?: number | null
+          meses_antecedencia?: number | null
+          natureza_id?: number | null
+          nome?: string
+          observacoes?: string | null
+          pessoa_id?: number | null
+          renovado_de_id?: number | null
+          status?: string | null
+          tipo?: string
+          total_ocorrencias?: number | null
+          ultima_geracao?: string | null
+          valor?: number
+          valor_estimado?: boolean
+        }
+        Relationships: [
+          {
+            foreignKeyName: "lancamentos_recorrentes_conta_origem_id_fkey"
+            columns: ["conta_origem_id"]
+            isOneToOne: false
+            referencedRelation: "contas_bancarias"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "lancamentos_recorrentes_conta_origem_id_fkey"
+            columns: ["conta_origem_id"]
+            isOneToOne: false
+            referencedRelation: "saldo_cartoes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "lancamentos_recorrentes_conta_origem_id_fkey"
+            columns: ["conta_origem_id"]
+            isOneToOne: false
+            referencedRelation: "saldo_contas"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "lancamentos_recorrentes_grupo_id_fkey"
+            columns: ["grupo_id"]
+            isOneToOne: false
+            referencedRelation: "grupo"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "lancamentos_recorrentes_item_id_fkey"
+            columns: ["item_id"]
+            isOneToOne: false
+            referencedRelation: "item"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "lancamentos_recorrentes_natureza_id_fkey"
+            columns: ["natureza_id"]
+            isOneToOne: false
+            referencedRelation: "natureza"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "lancamentos_recorrentes_pessoa_id_fkey"
+            columns: ["pessoa_id"]
+            isOneToOne: false
+            referencedRelation: "crm_aniversariantes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "lancamentos_recorrentes_pessoa_id_fkey"
+            columns: ["pessoa_id"]
+            isOneToOne: false
+            referencedRelation: "crm_pipeline_nutricao"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "lancamentos_recorrentes_pessoa_id_fkey"
+            columns: ["pessoa_id"]
+            isOneToOne: false
+            referencedRelation: "crm_pipeline_vendas"
+            referencedColumns: ["pessoa_id"]
+          },
+          {
+            foreignKeyName: "lancamentos_recorrentes_pessoa_id_fkey"
+            columns: ["pessoa_id"]
+            isOneToOne: false
+            referencedRelation: "ltv_clientes"
+            referencedColumns: ["pessoa_id"]
+          },
+          {
+            foreignKeyName: "lancamentos_recorrentes_pessoa_id_fkey"
+            columns: ["pessoa_id"]
+            isOneToOne: false
+            referencedRelation: "pessoas"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "lancamentos_recorrentes_renovado_de_id_fkey"
+            columns: ["renovado_de_id"]
+            isOneToOne: false
+            referencedRelation: "custo_fixo_comprometido"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "lancamentos_recorrentes_renovado_de_id_fkey"
+            columns: ["renovado_de_id"]
+            isOneToOne: false
+            referencedRelation: "lancamentos_recorrentes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "lancamentos_recorrentes_renovado_de_id_fkey"
+            columns: ["renovado_de_id"]
+            isOneToOne: false
+            referencedRelation: "mrr_ativo"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "lancamentos_recorrentes_renovado_de_id_fkey"
+            columns: ["renovado_de_id"]
+            isOneToOne: false
+            referencedRelation: "recorrentes_candidatos"
+            referencedColumns: ["recorrente_id"]
           },
         ]
       }
@@ -619,16 +821,19 @@ export type Database = {
       }
       natureza: {
         Row: {
+          ativo: boolean
           descricao: string | null
           id: number
           nome: string
         }
         Insert: {
+          ativo?: boolean
           descricao?: string | null
           id?: number
           nome: string
         }
         Update: {
+          ativo?: boolean
           descricao?: string | null
           id?: number
           nome?: string
@@ -714,9 +919,37 @@ export type Database = {
           },
         ]
       }
+      profiles: {
+        Row: {
+          ativo: boolean
+          atualizado_em: string
+          criado_em: string
+          email: string | null
+          id: string
+          nome: string | null
+        }
+        Insert: {
+          ativo?: boolean
+          atualizado_em?: string
+          criado_em?: string
+          email?: string | null
+          id: string
+          nome?: string | null
+        }
+        Update: {
+          ativo?: boolean
+          atualizado_em?: string
+          criado_em?: string
+          email?: string | null
+          id?: string
+          nome?: string | null
+        }
+        Relationships: []
+      }
       transacoes: {
         Row: {
           atualizado_em: string
+          competencia: string | null
           conciliada: boolean
           conta_destino_id: number | null
           conta_origem_id: number | null
@@ -724,6 +957,7 @@ export type Database = {
           grupo_id: number
           id: number
           item_id: number
+          lancamento_recorrente_id: number | null
           natureza_id: number
           nome: string
           pessoa_id: number | null
@@ -733,10 +967,12 @@ export type Database = {
             | null
           tipo: Database["public"]["Enums"]["tipo_transacao"]
           valor: number
+          valor_estimado: boolean
           vencimento: string
         }
         Insert: {
           atualizado_em?: string
+          competencia?: string | null
           conciliada?: boolean
           conta_destino_id?: number | null
           conta_origem_id?: number | null
@@ -744,6 +980,7 @@ export type Database = {
           grupo_id: number
           id?: number
           item_id: number
+          lancamento_recorrente_id?: number | null
           natureza_id: number
           nome: string
           pessoa_id?: number | null
@@ -753,10 +990,12 @@ export type Database = {
             | null
           tipo: Database["public"]["Enums"]["tipo_transacao"]
           valor: number
+          valor_estimado?: boolean
           vencimento: string
         }
         Update: {
           atualizado_em?: string
+          competencia?: string | null
           conciliada?: boolean
           conta_destino_id?: number | null
           conta_origem_id?: number | null
@@ -764,6 +1003,7 @@ export type Database = {
           grupo_id?: number
           id?: number
           item_id?: number
+          lancamento_recorrente_id?: number | null
           natureza_id?: number
           nome?: string
           pessoa_id?: number | null
@@ -773,6 +1013,7 @@ export type Database = {
             | null
           tipo?: Database["public"]["Enums"]["tipo_transacao"]
           valor?: number
+          valor_estimado?: boolean
           vencimento?: string
         }
         Relationships: [
@@ -787,6 +1028,13 @@ export type Database = {
             foreignKeyName: "transacoes_conta_destino_id_fkey"
             columns: ["conta_destino_id"]
             isOneToOne: false
+            referencedRelation: "saldo_cartoes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "transacoes_conta_destino_id_fkey"
+            columns: ["conta_destino_id"]
+            isOneToOne: false
             referencedRelation: "saldo_contas"
             referencedColumns: ["id"]
           },
@@ -795,6 +1043,13 @@ export type Database = {
             columns: ["conta_origem_id"]
             isOneToOne: false
             referencedRelation: "contas_bancarias"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "transacoes_conta_origem_id_fkey"
+            columns: ["conta_origem_id"]
+            isOneToOne: false
+            referencedRelation: "saldo_cartoes"
             referencedColumns: ["id"]
           },
           {
@@ -817,6 +1072,34 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "item"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "transacoes_lancamento_recorrente_id_fkey"
+            columns: ["lancamento_recorrente_id"]
+            isOneToOne: false
+            referencedRelation: "custo_fixo_comprometido"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "transacoes_lancamento_recorrente_id_fkey"
+            columns: ["lancamento_recorrente_id"]
+            isOneToOne: false
+            referencedRelation: "lancamentos_recorrentes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "transacoes_lancamento_recorrente_id_fkey"
+            columns: ["lancamento_recorrente_id"]
+            isOneToOne: false
+            referencedRelation: "mrr_ativo"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "transacoes_lancamento_recorrente_id_fkey"
+            columns: ["lancamento_recorrente_id"]
+            isOneToOne: false
+            referencedRelation: "recorrentes_candidatos"
+            referencedColumns: ["recorrente_id"]
           },
           {
             foreignKeyName: "transacoes_natureza_id_fkey"
@@ -862,8 +1145,37 @@ export type Database = {
           },
         ]
       }
+      user_roles: {
+        Row: {
+          criado_em: string
+          role: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Insert: {
+          criado_em?: string
+          role?: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Update: {
+          criado_em?: string
+          role?: Database["public"]["Enums"]["app_role"]
+          user_id?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
+      alertas_sistema: {
+        Row: {
+          mensagem: string | null
+          origem_id: number | null
+          pessoa_id: number | null
+          referencia: string | null
+          severidade: string | null
+          tipo: string | null
+        }
+        Relationships: []
+      }
       calendario: {
         Row: {
           atrasado: boolean | null
@@ -988,6 +1300,7 @@ export type Database = {
           origem: string | null
           pessoa: string | null
           pessoa_id: number | null
+          probabilidade_fechamento: number | null
           resultado:
             | Database["public"]["Enums"]["crm_resultado_oportunidade"]
             | null
@@ -998,6 +1311,7 @@ export type Database = {
           tipo_final: string | null
           transacoes_concluidas: number | null
           valor: number | null
+          valor_ponderado: number | null
           whatsapp: string | null
         }
         Relationships: []
@@ -1036,6 +1350,64 @@ export type Database = {
           valor_total: number | null
         }
         Relationships: []
+      }
+      custo_fixo_comprometido: {
+        Row: {
+          conta_origem_id: number | null
+          custo_mensal: number | null
+          data_inicio: string | null
+          dia_vencimento: number | null
+          frequencia: string | null
+          id: number | null
+          nome: string | null
+          status: string | null
+          valor: number | null
+        }
+        Insert: {
+          conta_origem_id?: number | null
+          custo_mensal?: never
+          data_inicio?: string | null
+          dia_vencimento?: number | null
+          frequencia?: string | null
+          id?: number | null
+          nome?: string | null
+          status?: string | null
+          valor?: number | null
+        }
+        Update: {
+          conta_origem_id?: number | null
+          custo_mensal?: never
+          data_inicio?: string | null
+          dia_vencimento?: number | null
+          frequencia?: string | null
+          id?: number | null
+          nome?: string | null
+          status?: string | null
+          valor?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "lancamentos_recorrentes_conta_origem_id_fkey"
+            columns: ["conta_origem_id"]
+            isOneToOne: false
+            referencedRelation: "contas_bancarias"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "lancamentos_recorrentes_conta_origem_id_fkey"
+            columns: ["conta_origem_id"]
+            isOneToOne: false
+            referencedRelation: "saldo_cartoes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "lancamentos_recorrentes_conta_origem_id_fkey"
+            columns: ["conta_origem_id"]
+            isOneToOne: false
+            referencedRelation: "saldo_contas"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       dashboard_financeiro: {
         Row: {
@@ -1124,6 +1496,91 @@ export type Database = {
         }
         Relationships: []
       }
+      mrr_ativo: {
+        Row: {
+          data_inicio: string | null
+          dia_vencimento: number | null
+          frequencia: string | null
+          id: number | null
+          nome: string | null
+          pessoa_id: number | null
+          status: string | null
+          valor: number | null
+          valor_mensal: number | null
+        }
+        Insert: {
+          data_inicio?: string | null
+          dia_vencimento?: number | null
+          frequencia?: string | null
+          id?: number | null
+          nome?: string | null
+          pessoa_id?: number | null
+          status?: string | null
+          valor?: number | null
+          valor_mensal?: never
+        }
+        Update: {
+          data_inicio?: string | null
+          dia_vencimento?: number | null
+          frequencia?: string | null
+          id?: number | null
+          nome?: string | null
+          pessoa_id?: number | null
+          status?: string | null
+          valor?: number | null
+          valor_mensal?: never
+        }
+        Relationships: [
+          {
+            foreignKeyName: "lancamentos_recorrentes_pessoa_id_fkey"
+            columns: ["pessoa_id"]
+            isOneToOne: false
+            referencedRelation: "crm_aniversariantes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "lancamentos_recorrentes_pessoa_id_fkey"
+            columns: ["pessoa_id"]
+            isOneToOne: false
+            referencedRelation: "crm_pipeline_nutricao"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "lancamentos_recorrentes_pessoa_id_fkey"
+            columns: ["pessoa_id"]
+            isOneToOne: false
+            referencedRelation: "crm_pipeline_vendas"
+            referencedColumns: ["pessoa_id"]
+          },
+          {
+            foreignKeyName: "lancamentos_recorrentes_pessoa_id_fkey"
+            columns: ["pessoa_id"]
+            isOneToOne: false
+            referencedRelation: "ltv_clientes"
+            referencedColumns: ["pessoa_id"]
+          },
+          {
+            foreignKeyName: "lancamentos_recorrentes_pessoa_id_fkey"
+            columns: ["pessoa_id"]
+            isOneToOne: false
+            referencedRelation: "pessoas"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      previsao_caixa: {
+        Row: {
+          a_pagar: number | null
+          a_receber: number | null
+          pago: number | null
+          periodo: string | null
+          periodo_curto: string | null
+          recebido: number | null
+          saldo_previsto: number | null
+          valor_estimado_pendente: number | null
+        }
+        Relationships: []
+      }
       receita_por_servico: {
         Row: {
           grupo: string | null
@@ -1131,6 +1588,18 @@ export type Database = {
           qtd_transacoes: number | null
           receita_total: number | null
           servico: string | null
+        }
+        Relationships: []
+      }
+      recorrentes_candidatos: {
+        Row: {
+          contrato: string | null
+          lancamento: string | null
+          recorrente_id: number | null
+          status: Database["public"]["Enums"]["status_transacao"] | null
+          transacao_id: number | null
+          valor: number | null
+          vencimento: string | null
         }
         Relationships: []
       }
@@ -1148,6 +1617,33 @@ export type Database = {
           receita_bruta: number | null
           resultado: number | null
           total_socios: number | null
+        }
+        Relationships: []
+      }
+      saldo_cartoes: {
+        Row: {
+          dia_fechamento: number | null
+          dia_vencimento_fatura: number | null
+          id: number | null
+          limite: number | null
+          nome: string | null
+          saldo_devedor: number | null
+        }
+        Insert: {
+          dia_fechamento?: number | null
+          dia_vencimento_fatura?: number | null
+          id?: number | null
+          limite?: number | null
+          nome?: string | null
+          saldo_devedor?: never
+        }
+        Update: {
+          dia_fechamento?: number | null
+          dia_vencimento_fatura?: number | null
+          id?: number | null
+          limite?: number | null
+          nome?: string | null
+          saldo_devedor?: never
         }
         Relationships: []
       }
@@ -1188,9 +1684,38 @@ export type Database = {
       }
     }
     Functions: {
-      [_ in never]: never
+      fn_alertar_contratos_vencendo: {
+        Args: { p_dias?: number }
+        Returns: number
+      }
+      gerar_transacoes_recorrentes: {
+        Args: { p_id?: number }
+        Returns: {
+          criadas: number
+          nome: string
+          recorrente_id: number
+        }[]
+      }
+      meu_papel: {
+        Args: never
+        Returns: Database["public"]["Enums"]["app_role"]
+      }
+      renovar_recorrente: {
+        Args: { p_id: number; p_meses?: number; p_novo_valor?: number }
+        Returns: number
+      }
+      tem_papel: {
+        Args: { papeis: Database["public"]["Enums"]["app_role"][] }
+        Returns: boolean
+      }
+      tess_metadata: { Args: never; Returns: Json }
+      vincular_transacoes_recorrente: {
+        Args: { p_recorrente_id: number; p_transacao_ids: number[] }
+        Returns: number
+      }
     }
     Enums: {
+      app_role: "admin" | "socio" | "vendedor"
       crm_funil_tipo: "leads" | "vendas" | "nutricao"
       crm_prioridade_tarefa: "Baixa" | "Média" | "Alta" | "Urgente"
       crm_resultado_oportunidade: "Ganho" | "Perdido"
@@ -1215,12 +1740,12 @@ export type Tables<
   DefaultSchemaTableNameOrOptions extends
     | keyof (DefaultSchema["Tables"] & DefaultSchema["Views"])
     | { schema: keyof DatabaseWithoutInternals },
-  TableName extends DefaultSchemaTableNameOrOptions extends {
+  TableName extends (DefaultSchemaTableNameOrOptions extends {
     schema: keyof DatabaseWithoutInternals
   }
     ? keyof (DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"] &
         DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Views"])
-    : never = never,
+    : never) = never,
 > = DefaultSchemaTableNameOrOptions extends {
   schema: keyof DatabaseWithoutInternals
 }
@@ -1244,11 +1769,11 @@ export type TablesInsert<
   DefaultSchemaTableNameOrOptions extends
     | keyof DefaultSchema["Tables"]
     | { schema: keyof DatabaseWithoutInternals },
-  TableName extends DefaultSchemaTableNameOrOptions extends {
+  TableName extends (DefaultSchemaTableNameOrOptions extends {
     schema: keyof DatabaseWithoutInternals
   }
     ? keyof DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"]
-    : never = never,
+    : never) = never,
 > = DefaultSchemaTableNameOrOptions extends {
   schema: keyof DatabaseWithoutInternals
 }
@@ -1269,11 +1794,11 @@ export type TablesUpdate<
   DefaultSchemaTableNameOrOptions extends
     | keyof DefaultSchema["Tables"]
     | { schema: keyof DatabaseWithoutInternals },
-  TableName extends DefaultSchemaTableNameOrOptions extends {
+  TableName extends (DefaultSchemaTableNameOrOptions extends {
     schema: keyof DatabaseWithoutInternals
   }
     ? keyof DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"]
-    : never = never,
+    : never) = never,
 > = DefaultSchemaTableNameOrOptions extends {
   schema: keyof DatabaseWithoutInternals
 }
@@ -1294,11 +1819,11 @@ export type Enums<
   DefaultSchemaEnumNameOrOptions extends
     | keyof DefaultSchema["Enums"]
     | { schema: keyof DatabaseWithoutInternals },
-  EnumName extends DefaultSchemaEnumNameOrOptions extends {
+  EnumName extends (DefaultSchemaEnumNameOrOptions extends {
     schema: keyof DatabaseWithoutInternals
   }
     ? keyof DatabaseWithoutInternals[DefaultSchemaEnumNameOrOptions["schema"]]["Enums"]
-    : never = never,
+    : never) = never,
 > = DefaultSchemaEnumNameOrOptions extends {
   schema: keyof DatabaseWithoutInternals
 }
@@ -1311,11 +1836,11 @@ export type CompositeTypes<
   PublicCompositeTypeNameOrOptions extends
     | keyof DefaultSchema["CompositeTypes"]
     | { schema: keyof DatabaseWithoutInternals },
-  CompositeTypeName extends PublicCompositeTypeNameOrOptions extends {
+  CompositeTypeName extends (PublicCompositeTypeNameOrOptions extends {
     schema: keyof DatabaseWithoutInternals
   }
     ? keyof DatabaseWithoutInternals[PublicCompositeTypeNameOrOptions["schema"]]["CompositeTypes"]
-    : never = never,
+    : never) = never,
 > = PublicCompositeTypeNameOrOptions extends {
   schema: keyof DatabaseWithoutInternals
 }
@@ -1327,6 +1852,7 @@ export type CompositeTypes<
 export const Constants = {
   public: {
     Enums: {
+      app_role: ["admin", "socio", "vendedor"],
       crm_funil_tipo: ["leads", "vendas", "nutricao"],
       crm_prioridade_tarefa: ["Baixa", "Média", "Alta", "Urgente"],
       crm_resultado_oportunidade: ["Ganho", "Perdido"],
