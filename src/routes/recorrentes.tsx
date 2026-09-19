@@ -471,7 +471,7 @@ function VincularDialog({
         {candidatos.isLoading ? (
           <TableSkeleton />
         ) : (candidatos.data ?? []).length === 0 ? (
-          <EmptyState title="Nenhum candidato" description="Não há lançamentos soltos desse cliente após o início do contrato." />
+          <EmptyState message="Nenhum candidato — Não há lançamentos soltos desse cliente após o início do contrato." />
         ) : (
           <ul className="divide-y">
             {(candidatos.data ?? []).map((c) => (
@@ -544,7 +544,7 @@ function OcorrenciasDialog({
         {ocorrencias.isLoading ? (
           <TableSkeleton />
         ) : (ocorrencias.data ?? []).length === 0 ? (
-          <EmptyState title="Nada gerado ainda" description="Use o botão Gerar para lançar as ocorrências." />
+          <EmptyState message="Nada gerado ainda — Use o botão Gerar para lançar as ocorrências." />
         ) : (
           <ul className="divide-y">
             {(ocorrencias.data ?? []).map((o) => (
@@ -659,15 +659,14 @@ function ListaRecorrentes({ tipo }: { tipo: TipoRecorrente }) {
           <TableSkeleton />
         ) : lista.length === 0 ? (
           <EmptyState
-            title={tipo === "Receita" ? "Nenhum contrato cadastrado" : "Nenhuma despesa recorrente"}
-            description={
+            message={
               tipo === "Receita"
-                ? "Cadastre o contrato e depois vincule as cobranças já lançadas."
-                : "Cadastre a despesa, escolha quantas repetições e gere os lançamentos."
+                ? "Nenhum contrato cadastrado. Cadastre o contrato e depois vincule as cobranças já lançadas."
+                : "Nenhuma despesa recorrente. Cadastre a despesa, escolha quantas repetições e gere os lançamentos."
             }
           />
         ) : (
-          <div className="overflow-x-auto">
+          <div className="overflow-x-auto px-4 py-2">
             <table className="w-full text-sm">
               <thead className="text-left text-xs uppercase text-muted-foreground">
                 <tr>
@@ -775,11 +774,11 @@ function PrevisaoTab() {
   const previsao = useQuery(previsaoCaixaQuery);
   if (previsao.isLoading) return <TableSkeleton />;
   const lista = previsao.data ?? [];
-  if (!lista.length) return <EmptyState title="Sem dados" description="Nenhum lançamento no período." />;
+  if (!lista.length) return <EmptyState message="Sem dados — Nenhum lançamento no período." />;
 
   return (
     <SectionCard title="Previsão de caixa" description="Calculada sobre os vencimentos reais. Transferências e pagamento de fatura ficam fora, para não contar duas vezes.">
-      <div className="overflow-x-auto">
+      <div className="overflow-x-auto px-4 py-2">
         <table className="w-full text-sm">
           <thead className="text-left text-xs uppercase text-muted-foreground">
             <tr>
