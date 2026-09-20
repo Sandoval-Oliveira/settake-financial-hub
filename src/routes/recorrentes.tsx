@@ -471,7 +471,7 @@ function VincularDialog({
         {candidatos.isLoading ? (
           <TableSkeleton />
         ) : (candidatos.data ?? []).length === 0 ? (
-          <EmptyState message="Nenhum candidato — Não há lançamentos soltos desse cliente após o início do contrato." />
+          <EmptyState message="Nenhum candidato — não há lançamentos soltos (sem contrato vinculado) deste cliente e tipo. Lançamentos anteriores ao início do contrato também aparecem aqui quando existem." />
         ) : (
           <ul className="divide-y">
             {(candidatos.data ?? []).map((c) => (
@@ -486,8 +486,15 @@ function VincularDialog({
                 />
                 <div className="min-w-0 flex-1">
                   <p className="truncate">{c.lancamento}</p>
-                  <p className="text-xs text-muted-foreground">
-                    {formatDate(c.vencimento)} · {c.status}
+                  <p className="flex items-center gap-2 text-xs text-muted-foreground">
+                    <span>
+                      {formatDate(c.vencimento)} · {c.status}
+                    </span>
+                    {(c as { anterior_ao_contrato?: boolean | null }).anterior_ao_contrato ? (
+                      <span className="rounded-full border border-amber-300 bg-amber-50 px-2 py-0.5 text-[10px] font-medium text-amber-800">
+                        anterior ao contrato
+                      </span>
+                    ) : null}
                   </p>
                 </div>
                 <span className="tabular-nums">{formatMoney(c.valor)}</span>
