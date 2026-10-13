@@ -8,10 +8,9 @@ import {
   HeadContent,
   Scripts,
 } from "@tanstack/react-router";
-import { useEffect, type ReactNode } from "react";
+import { type ReactNode } from "react";
 
 import appCss from "../styles.css?url";
-import { reportLovableError } from "../lib/lovable-error-reporting";
 import { AppShell } from "@/components/finance/app-shell";
 import { Toaster } from "@/components/ui/sonner";
 import { AuthGate, isRotaPublica } from "@/components/finance/AuthGate";
@@ -42,9 +41,6 @@ function NotFoundComponent() {
 function ErrorComponent({ error, reset }: { error: Error; reset: () => void }) {
   console.error(error);
   const router = useRouter();
-  useEffect(() => {
-    reportLovableError(error, { boundary: "tanstack_root_error_component" });
-  }, [error]);
 
   return (
     <div className="flex min-h-screen items-center justify-center bg-background px-4">
@@ -89,7 +85,6 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       { property: "og:description", content: "Fluxo de caixa, lançamentos, calendário e relatórios em um só lugar." },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },
-      { name: "twitter:site", content: "@Lovable" },
     ],
     links: [
       {
@@ -126,25 +121,24 @@ function RootShell({ children }: { children: ReactNode }) {
 }
 
 function RootComponent() {
-  const { queryClient } = Route.useRouteContext();
-  const pathname = useRouterState({ select: (s) => s.location.pathname });
-  const publica = isRotaPublica(pathname);
+  const routerState = useRouterState();
+  const pathname = routerState.location.pathname;
 
   return (
-    <QueryClientProvider client={queryClient}>
-      <AuthProvider>
+    <AuthProvider>
+      {isRotaPublica(pathname) ? (
+        <>
+          <Outlet />
+          <Toaster />
+        </>
+      ) : (
         <AuthGate>
-          {publica ? (
+          <AppShell>
             <Outlet />
-          ) : (
-            <AppShell>
-              {/* Required: nested routes render here. Removing <Outlet /> breaks all child routes. */}
-              <Outlet />
-            </AppShell>
-          )}
+            <Toaster />
+          </AppShell>
         </AuthGate>
-      </AuthProvider>
-      <Toaster position="top-right" richColors />
-    </QueryClientProvider>
+      )}
+    </AuthProvider>
   );
 }
